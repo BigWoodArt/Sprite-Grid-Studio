@@ -27,7 +27,7 @@ const S = {
   cellSel:new Set(), active:{c:0,r:0},
   sel:null, floating:null, clip:null,
   name:'untitled.png', handle:null, dirty:false, hover:null,
-  layerFull: store.get('layerFull', false), autoCell: store.get('autoCell', true), fade: store.get('fade', false), keepDrafts: store.get('keepDrafts', true), palette: store.get('palette', DEFAULT_PAL), recent: store.get('recent', [])
+  layerFull: store.get('layerFull', false), autoCell: store.get('autoCell', true), fade: store.get('fade', false), keepDrafts: store.get('keepDrafts', true), openMode: store.get('openMode', 'smart'), palette: store.get('palette', DEFAULT_PAL), recent: store.get('recent', [])
 };
 const key = (c,r) => c+','+r;
 let doc, dctx, layers=[], activeL=0, layerCount=1, comp=mk(1,1), cctx, compDirty=true;

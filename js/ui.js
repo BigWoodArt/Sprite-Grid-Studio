@@ -37,12 +37,14 @@ $('#bSettings').onclick=()=>{ modal('Settings',`
   <label style="color:var(--text)"><input type="checkbox" id="stFull"> Show the full sheet (default: just the top-left cell)</label>
   <span>Tools</span>
   <label style="color:var(--text)"><input type="checkbox" id="stAuto"> Right-click with any tool except Pencil switches back to Select Cells</label>
+  <span>Open</span>
+  <select id="stOpen"><option value="smart">Browser file picker (can save back to the file)</option><option value="basic">Basic chooser (works in protected folders)</option></select>
   <span>Reloading</span>
   <label style="color:var(--text)"><input type="checkbox" id="stDraft"> Keep unsaved edits (with undo history) when the page is reloaded</label>
   <span>Selection</span>
   <label style="color:var(--text)"><input type="checkbox" id="stFade"> Fade out everything outside a selection with moving stripes</label></div>`,
-  ()=>{ S.layerFull=$('#stFull').checked; store.set('layerFull',S.layerFull); S.autoCell=$('#stAuto').checked; store.set('autoCell',S.autoCell); S.fade=$('#stFade').checked; store.set('fade',S.fade); S.keepDrafts=$('#stDraft').checked; store.set('keepDrafts',S.keepDrafts); sessionSave(); renderLayers(); changed(); return true; },'Save');
-  $('#stFull').checked=S.layerFull; $('#stAuto').checked=S.autoCell; $('#stFade').checked=S.fade; $('#stDraft').checked=S.keepDrafts; };
+  ()=>{ S.layerFull=$('#stFull').checked; store.set('layerFull',S.layerFull); S.autoCell=$('#stAuto').checked; store.set('autoCell',S.autoCell); S.fade=$('#stFade').checked; store.set('fade',S.fade); S.keepDrafts=$('#stDraft').checked; store.set('keepDrafts',S.keepDrafts); S.openMode=$('#stOpen').value; store.set('openMode',S.openMode); sessionSave(); renderLayers(); changed(); return true; },'Save');
+  $('#stFull').checked=S.layerFull; $('#stAuto').checked=S.autoCell; $('#stFade').checked=S.fade; $('#stDraft').checked=S.keepDrafts; $('#stOpen').value=S.openMode; };
 
 function showHelp(){
   const rows=[['B / E / G','Pencil / Eraser / Fill'],['L / R / O','Line / Rectangle / Ellipse (Shift = 45° / square / circle)'],['I or Alt+click','Eyedropper (right-click = secondary color)'],
