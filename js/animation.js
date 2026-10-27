@@ -54,7 +54,13 @@ function drawAnim(){
   thumbs.forEach(t=>t.el.classList.toggle('play', anim.playing && seqs.length===1 && t.c===cur.c && t.r===cur.r));
   return n;
 }
+// The Animation section can be folded away; while it is hidden nothing is drawn or advanced
+S.animFold=store.get('animFold',false);
+function applyAnimFold(){ $('#animSec').classList.toggle('folded',S.animFold); $('#animFold .arr').textContent=S.animFold?'▸':'▾'; if(S.animFold) thumbs.forEach(t=>t.el.classList.remove('play')); }
+$('#animFold').onclick=()=>{ S.animFold=!S.animFold; store.set('animFold',S.animFold); applyAnimFold(); };
+applyAnimFold();
 function animLoop(ts){
+  if(S.animFold){ anim.last=0; requestAnimationFrame(animLoop); return; }
   const n=drawAnim();
   if(anim.playing){
     const dt=ts-(anim.last||ts); anim.last=ts; anim.acc+=dt;
