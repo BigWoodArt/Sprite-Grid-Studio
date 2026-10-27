@@ -2,7 +2,7 @@
 // Shared helpers, app state and undo history
 
 /* ---------- helpers ---------- */
-const APP_VERSION = '0.1.1';
+const APP_VERSION = '0.1.2';
 const $ = s => document.querySelector(s);
 const mk = (w,h) => { const c=document.createElement('canvas'); c.width=w; c.height=h; return c; };
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
