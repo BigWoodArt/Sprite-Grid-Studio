@@ -51,7 +51,7 @@ function showHelp(){
     ['Delete','Clear selection or selected cells'],['U / T / Q / N / K','Gradient / Adjust shape / Rotate-flip / Noise / Colorize'],['Shift+click or Shift+drag','Add to the selected cells (Select Cells) or add another region (Select region)'],['Ctrl+D','Clear selection (deselect)'],['H / Shift+H','Flip cells or selection horizontally / vertically'],['Arrows / WASD','Move the view (Shift = faster)'],['Alt+Arrows','Nudge selection or cell contents (Alt+Shift = wrap)'],['Drag outside the image','Pans the view with Pencil, Eraser or Move'],
     [', .','Previous / next cell'],['Ctrl+A','Select all cells'],['Esc','Deselect / cancel floating paste'],['Enter','Drop floating pixels'],
     ['P','Play/pause animation'],['G toggles?','Press <kbd>#</kbd> to toggle the cell grid'],['Ctrl+Z / Y','Undo / redo'],['Ctrl+N / O / S','New / Open / Save (Shift+S = Save as)']];
-  infoModal('Shortcuts','<table>'+rows.map(r=>`<tr><td><kbd>${r[0]}</kbd></td><td>${r[1]}</td></tr>`).join('')+'</table>');
+  infoModal('Shortcuts · v'+APP_VERSION,'<table>'+rows.map(r=>`<tr><td><kbd>${r[0]}</kbd></td><td>${r[1]}</td></tr>`).join('')+'</table>');
 }
 
 /* ---------- keyboard ---------- */
