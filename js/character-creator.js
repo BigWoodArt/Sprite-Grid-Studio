@@ -23,7 +23,10 @@ function ccHide(){ CC.open=false; $('#cc').classList.remove('show'); changed(); 
 async function ccPick(){
   if(window.showDirectoryPicker){
     try{ const dh=await showDirectoryPicker({mode:'readwrite'}); kvSet('ccDir',dh); await ccLoadDir(dh); }
-    catch(e){ if(e&&e.name!=='AbortError'){ console.warn(e); toast('Could not open that folder'); } }
+    catch(e){
+      if(e&&e.name==='AbortError') showHint('No folder chosen. Chrome cannot browse protected folders such as Program Files.','Use basic folder picker',()=>$('#ccDirIn').click());
+      else { console.warn(e); toast('Could not open that folder'); }
+    }
   } else $('#ccDirIn').click();
 }
 async function walkDir(dh,prefix,out,depth=0){
@@ -233,6 +236,6 @@ async function ccToEditor(){
 }
 $('#bCC').onclick=ccShow; $('#ccClose').onclick=ccHide;
 $('#ccPick').onclick=ccPick; $('#ccPick2').onclick=ccPick;
-$('#ccReload').onclick=async()=>{ if(!CC.dirHandle){ toast('Choose a folder first'); return; } await ccReload(); ccRender(); toast('Reloaded'); };
+$('#ccReload').onclick=async()=>{ if(!CC.dirHandle){ toast(CC.groups.size?'Basic-picker folders cannot be reloaded: choose the folder again':'Choose a folder first'); return; } await ccReload(); ccRender(); toast('Reloaded'); };
 $('#ccRand').onclick=ccRandomize; $('#ccToEd').onclick=ccToEditor;
 $('#ccPng').onclick=()=>{ const g=ccG(); if(g&&g.last) g.last.toBlob(b=>download(b,'character.png')); };

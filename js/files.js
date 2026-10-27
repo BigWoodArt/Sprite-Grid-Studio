@@ -26,9 +26,19 @@ async function openFile(file,handle){
 async function openDialog(){
   if(window.showOpenFilePicker){
     try{ const [h]=await showOpenFilePicker({types:[{description:'Images and projects',accept:{'image/*':['.png','.gif','.webp','.jpg','.jpeg'],'application/json':['.gchproj']}}]}); return openFile(await h.getFile(),h); }
-    catch(e){ if(e&&e.name==='AbortError') return; }
+    catch(e){
+      if(e&&e.name==='AbortError'){            // cancelled, or Chrome refused a protected folder (it does not tell the page which)
+        showHint('Nothing opened. Chrome cannot browse protected folders such as Program Files.','Use basic chooser',()=>$('#fileIn').click()); return; }
+    }
   }
   $('#fileIn').click();
+}
+// A small notice with one action, shown when the browser file picker comes back empty-handed
+let _hintT=0;
+function showHint(text,label,go){
+  const b=$('#hintBar'); $('#hintText').textContent=text; $('#hintGo').textContent=label;
+  $('#hintGo').onclick=()=>{ b.classList.remove('show'); go(); }; $('#hintNo').onclick=()=>b.classList.remove('show');
+  b.classList.add('show'); clearTimeout(_hintT); _hintT=setTimeout(()=>b.classList.remove('show'),10000);
 }
 $('#fileIn').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; openFile(f,null); };
 async function save(as){
@@ -80,7 +90,7 @@ async function openProject(file,handle){
 $('#bSaveProj').onclick=e=>saveProject(e.shiftKey);
 $('#selWarnClear').onclick=()=>{ commitFloat(); S.sel=null; selHistory('Deselect'); $('#selWarn').classList.remove('show'); changed(true); toast('Selection cleared'); };
 $('#selWarnOk').onclick=()=>$('#selWarn').classList.remove('show');
-$('#bNew').onclick=newDoc; $('#bOpen').onclick=openDialog; $('#bSave').onclick=()=>save(false); $('#bSaveAs').onclick=()=>save(true);
+$('#bNew').onclick=newDoc; $('#bOpen').onclick=e=>e.shiftKey?$('#fileIn').click():openDialog(); $('#bSave').onclick=()=>save(false); $('#bSaveAs').onclick=()=>save(true);
 $('#bUndo').onclick=undo; $('#bRedo').onclick=redo;
 window.addEventListener('beforeunload',e=>{ if(needsWarning()){ e.preventDefault(); e.returnValue=''; } });
 // drag & drop files / paste images

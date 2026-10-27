@@ -165,3 +165,7 @@ label input[type=checkbox]{accent-color:var(--accent)}
 #restoreBar.show{display:flex}
 #restoreBar .rb3{display:flex;gap:6px}
 #restoreBar button{padding:2px 8px;font-size:11px}
+
+#hintBar{position:fixed;top:52px;left:50%;transform:translateX(-50%);z-index:70;display:none;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 10px;width:max-content;max-width:92%;background:var(--panel);border:1px solid var(--accent);border-radius:8px;padding:6px 10px;box-shadow:0 6px 18px #000a;font-size:12px}
+#hintBar.show{display:flex}
+#hintBar button{padding:2px 8px;font-size:11px}
