@@ -21,16 +21,18 @@ function buildThumbs(){
       const cv=mk(S.fw,S.fh); cv.style.width=cw+'px'; cv.style.height=ch+'px'; b.appendChild(cv);
       b.onclick=e=>selectCell(c,r,{ctrl:e.ctrlKey||e.metaKey,shift:e.shiftKey});
       b.ondblclick=()=>centerOnCell(c,r);
-      b.ondragstart=e=>{ e.dataTransfer.setData('text/plain',c+','+r); e.dataTransfer.effectAllowed='copyMove'; dragCell={c,r}; };
-      b.ondragover=e=>{ e.preventDefault(); b.classList.add('over'); };
-      b.ondragleave=()=>b.classList.remove('over');
-      b.ondrop=e=>{ e.preventDefault(); b.classList.remove('over'); if(dragCell) dropCell(dragCell,{c,r},e.shiftKey); dragCell=null; };
+      b.ondragstart=e=>{ e.dataTransfer.setData('text/plain',c+','+r); e.dataTransfer.effectAllowed='copyMove'; dragCell={c,r}; dragShift=e.shiftKey; };
+      b.ondragover=e=>{ e.preventDefault(); dragShift=dragShift||e.shiftKey; e.dataTransfer.dropEffect=dragShift?'move':'copy'; b.classList.add('over'); b.classList.toggle('swap',dragShift); };
+      b.ondragleave=()=>b.classList.remove('over','swap');
+      b.ondrop=e=>{ e.preventDefault(); b.classList.remove('over','swap'); if(dragCell) dropCell(dragCell,{c,r},dragShift||e.shiftKey); dragCell=null; dragShift=false; };
+      b.ondragend=()=>{ dragCell=null; dragShift=false; };
       box.appendChild(b); thumbs.push({c,r,el:b,cv});
     }
   }
   updateThumbClasses();
 }
-let dragCell=null;
+setupFold('cellsSec','cellsFold','cellsFold');   // the Cells header folds the whole panel
+let dragCell=null, dragShift=false;   // dragShift stays true once Shift has been seen anywhere during the drag
 function dropCell(src,dst,swap){
   commitFloat();
   if(src.c===dst.c&&src.r===dst.r) return;
@@ -67,6 +69,11 @@ $('#cCopy').onclick=copySel; $('#cPaste').onclick=pasteClip; $('#cClear').onclic
 $('#cFH').onclick=()=>withRects('Flip H',r=>flipRect(r,true,false));
 $('#cFV').onclick=()=>withRects('Flip V',r=>flipRect(r,false,true));
 $('#cRot').onclick=()=>{ let ok=true; withRects('Rotate',r=>{ if(!rotRect(r)) ok=false; }); if(!ok) toast('Rotate needs square cells/selection'); };
+$('#cSwap').onclick=()=>{
+  commitFloat(); const cs=selCells();
+  if(cs.length!==2){ toast('Select exactly two cells to swap'); return; }
+  dropCell(cs[0],cs[1],true);
+};
 $('#cDup').onclick=()=>{
   commitFloat(); const cs=selCells(); if(!cs.length) cs.push({...S.active});
   const cl=grabCells(cs); const mc=Math.min(...cs.map(o=>o.c)), mr=Math.min(...cs.map(o=>o.r));

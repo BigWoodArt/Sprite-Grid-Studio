@@ -91,8 +91,8 @@
       <div class="pal" id="pal" style="margin-top:6px"></div>
     </div>
 
-    <div class="sec">
-      <h3>Cells <span class="sp"></span><span style="text-transform:none;letter-spacing:0" id="cellInfo"></span></h3>
+    <div class="sec" id="cellsSec">
+      <h3 class="fold" id="cellsFold" title="Show or hide the cells panel"><span class="arr">▾</span> Cells <span class="sp"></span><span style="text-transform:none;letter-spacing:0" id="cellInfo"></span></h3>
       <div class="row" style="margin-bottom:6px">
         <button class="mini" id="cCopy" title="Copy selected cells (Ctrl+C)">Copy</button>
         <button class="mini" id="cPaste" title="Paste into the selected cells (Ctrl+V)">Paste</button>
@@ -101,6 +101,7 @@
         <button class="mini" id="cFV" title="Flip vertically (Shift+H)">Flip V</button>
         <button class="mini" id="cRot" title="Rotate 90° clockwise (square cells)">Rot</button>
         <button class="mini" id="cDup" title="Duplicate into the next cell(s) to the right">Dup →</button>
+        <button class="mini" id="cSwap" title="Swap the two selected cells (or Shift-drag one cell onto another)">Swap</button>
       </div>
       <div class="row" style="margin-bottom:8px">
         <span style="color:var(--dim)">Nudge</span>
@@ -108,7 +109,7 @@
         <label><input type="checkbox" id="nWrap"> wrap</label>
       </div>
       <div id="cells"></div>
-      <div style="color:var(--dim);margin-top:6px;font-size:11px">Click to select · Shift adds · Ctrl toggles · Ctrl+Shift adds a box · drag a cell onto another to copy (hold Shift to swap) · click R/C headers for rows and columns</div>
+      <div style="color:var(--dim);margin-top:6px;font-size:11px">Click to select · Shift adds · Ctrl toggles · Ctrl+Shift adds a box · drag a cell onto another to copy, Shift-drag to swap · click R/C headers for rows and columns</div>
     </div>
 
     <div class="sec" id="animSec">

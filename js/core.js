@@ -4,6 +4,13 @@
 /* ---------- helpers ---------- */
 const APP_VERSION = '0.1.4';
 const $ = s => document.querySelector(s);
+// A section whose header folds it away; the state is remembered. Returns a function that says whether it is folded.
+function setupFold(secId,headId,key,after){
+  const sec=$('#'+secId), head=$('#'+headId); let folded=!!JSON.parse(localStorage.getItem('sgs.'+key)||'false');
+  const apply=()=>{ sec.classList.toggle('folded',folded); head.querySelector('.arr').textContent=folded?'▸':'▾'; if(after) after(folded); };
+  head.onclick=()=>{ folded=!folded; try{ localStorage.setItem('sgs.'+key,JSON.stringify(folded)); }catch(e){} apply(); };
+  apply(); return ()=>folded;
+}
 const mk = (w,h) => { const c=document.createElement('canvas'); c.width=w; c.height=h; return c; };
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
 const store = {

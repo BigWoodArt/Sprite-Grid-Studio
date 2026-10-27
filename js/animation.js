@@ -55,10 +55,8 @@ function drawAnim(){
   return n;
 }
 // The Animation section can be folded away; while it is hidden nothing is drawn or advanced
-S.animFold=store.get('animFold',false);
-function applyAnimFold(){ $('#animSec').classList.toggle('folded',S.animFold); $('#animFold .arr').textContent=S.animFold?'▸':'▾'; if(S.animFold) thumbs.forEach(t=>t.el.classList.remove('play')); }
-$('#animFold').onclick=()=>{ S.animFold=!S.animFold; store.set('animFold',S.animFold); applyAnimFold(); };
-applyAnimFold();
+S.animFold=false;
+setupFold('animSec','animFold','animFold',f=>{ S.animFold=f; if(f) thumbs.forEach(t=>t.el.classList.remove('play')); });
 function animLoop(ts){
   if(S.animFold){ anim.last=0; requestAnimationFrame(animLoop); return; }
   const n=drawAnim();

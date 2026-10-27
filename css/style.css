@@ -175,3 +175,6 @@ label input[type=checkbox]{accent-color:var(--accent)}
 .fold .arr{display:inline-block;width:10px;font-size:10px}
 .sec.folded > :not(h3){display:none !important}
 .sec.folded > h3{margin-bottom:0}
+
+.th.over.swap{border-color:var(--ok)}
+.th.over.swap::after{content:"⇄";position:absolute;inset:0;display:grid;place-items:center;font-size:18px;color:var(--ok);background:#000a;pointer-events:none}
