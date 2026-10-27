@@ -92,6 +92,16 @@ function render(){
     for(let r=0;r<=S.rows;r++){ const sy=oy+r*S.fh*z+.5; g.moveTo(ox,sy); g.lineTo(ox+W*z,sy); }
     g.stroke();
   } else { g.strokeStyle='rgba(255,255,255,.2)'; g.strokeRect(ox+.5,oy+.5,W*z,H*z); }
+  // several cells selected: one outline around the whole group (only the outer edges), so it shows even where the cells are full of artwork
+  if(S.cellSel.size>1){
+    const has=(c,r)=>S.cellSel.has(key(c,r)); g.beginPath();
+    for(const k of S.cellSel){
+      const [c,r]=k.split(',').map(Number), x0=ox+c*S.fw*z, y0=oy+r*S.fh*z, x1=x0+S.fw*z, y1=y0+S.fh*z;
+      if(!has(c,r-1)){ g.moveTo(x0,y0); g.lineTo(x1,y0); } if(!has(c,r+1)){ g.moveTo(x0,y1); g.lineTo(x1,y1); }
+      if(!has(c-1,r)){ g.moveTo(x0,y0); g.lineTo(x0,y1); } if(!has(c+1,r)){ g.moveTo(x1,y0); g.lineTo(x1,y1); }
+    }
+    g.lineCap='square'; g.lineWidth=5; g.strokeStyle='rgba(0,0,0,.55)'; g.stroke(); g.lineWidth=3; g.strokeStyle='#4aa3ff'; g.stroke(); g.lineCap='butt';
+  }
   { const a=cellRect(S.active.c,S.active.r); g.strokeStyle='#fff'; g.lineWidth=2;
     g.strokeRect(ox+a.x*z+1,oy+a.y*z+1,a.w*z-2,a.h*z-2); }
   // selection marquee
