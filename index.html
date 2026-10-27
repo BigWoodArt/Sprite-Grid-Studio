@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sprite Grid Studio</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="top">
+  <span class="title">Sprite Grid Studio</span>
+  <button id="bNew" title="New (Ctrl+N)">New</button>
+  <button id="bOpen" title="Open PNG (Ctrl+O)">Open</button>
+  <button id="bSave" title="Save PNG (Ctrl+S)">Save</button>
+  <button id="bSaveAs" title="Save as… (Ctrl+Shift+S)">Save as…</button>
+  <button id="bSaveProj" title="Save a project file that keeps layers separate (.gchproj). Shift-click to choose a new file.">Save project…</button>
+  <span class="sep"></span>
+  <button id="bUndo" title="Undo (Ctrl+Z)">↶ Undo</button>
+  <button id="bRedo" title="Redo (Ctrl+Y)">↷ Redo</button>
+  <span class="sep"></span>
+  <button id="bGrid" title="Change the grid / frame size">Grid…</button>
+  <button id="bCC" title="Build characters from a folder of layered pieces">Character Creator</button>
+  <button id="bSettings" title="Settings">⚙ Settings</button>
+  <button id="bHelp" title="Keyboard shortcuts (?)">?</button>
+  <span class="fname" id="fname"></span>
+</div>
+
+<div id="tabs"></div>
+
+<div class="opts" id="opts">
+  <label>Brush <input type="range" id="oSize" min="1" max="16" value="1" style="width:80px"><b id="oSizeV" style="color:var(--text);width:22px;text-align:right">1</b>
+    <span class="spin"><button type="button" data-spin="oSize" data-d="1" title="Bigger by 1">▲</button><button type="button" data-spin="oSize" data-d="-1" title="Smaller by 1">▼</button></span></label>
+  <span id="oWand" style="display:none;align-items:center;gap:12px">
+    <label>Tolerance <input type="range" id="oTol" min="0" max="100" value="20" style="width:110px"><b id="oTolV" style="color:var(--text);width:26px;text-align:right">20</b>
+      <span class="spin"><button type="button" data-spin="oTol" data-d="1" title="More tolerance by 1">▲</button><button type="button" data-spin="oTol" data-d="-1" title="Less tolerance by 1">▼</button></span></label>
+    <label title="Only pixels connected to the one you click"><input type="checkbox" id="oContig" checked> Contiguous</label>
+    <label title="Look at every visible layer, not just the active one"><input type="checkbox" id="oAllLayers"> All layers</label>
+  </span>
+  <label><input type="checkbox" id="oFill"> Filled shapes</label>
+  <span class="sep"></span>
+  <label title="Drawing, fills and moves stay inside the cell where you started"><input type="checkbox" id="oLock" checked> Lock to cell</label>
+  <label title="Mirror strokes left/right inside each cell"><input type="checkbox" id="oMX"> Mirror X</label>
+  <label title="Mirror strokes top/bottom inside each cell"><input type="checkbox" id="oMY"> Mirror Y</label>
+  <span class="sep"></span>
+  <label><input type="checkbox" id="oGrid" checked> Cell grid</label>
+  <label><input type="checkbox" id="oPGrid" checked> Pixel grid</label>
+  <label title="Ghost the previous frame (left neighbour) over the active cell"><input type="checkbox" id="oOnion"> Onion skin</label>
+  <label>Canvas bg
+    <select id="oBg"><option value="checker">Checker</option><option value="#202020">Dark</option><option value="#808080">Grey</option><option value="#e8e8e8">Light</option><option value="#3a7d44">Green</option><option value="#4a6fa5">Blue</option></select>
+  </label>
+</div>
+
+<div class="main">
+  <div class="tools" id="tools"></div>
+  <div class="lp">
+    <div class="lph">Layers <span class="sp"></span><span class="hint">top → bottom</span></div>
+    <div class="row lpb">
+      <button class="mini" id="lAdd" title="New layer above the active one">+ Add</button>
+      <button class="mini" id="lDup" title="Duplicate layer">Dup</button>
+      <button class="mini" id="lDel" title="Delete layer">Del</button>
+    </div>
+    <div class="row lpb">
+      <button class="mini" id="lMerge" title="Merge the active layer into the one below">Merge ↓</button>
+      <button class="mini" id="lUp" title="Move layer up">▲</button>
+      <button class="mini" id="lDn" title="Move layer down">▼</button>
+    </div>
+    <div id="layers"></div>
+    <div class="lpo"><label>Opacity <input type="range" id="lOp" min="0" max="255" value="255" style="width:90px"><span id="lOpV" style="color:var(--text);width:26px">255</span></label></div>
+  </div>
+  <div id="stage"><canvas id="view"></canvas><div id="tp"></div>
+    <div id="restoreBar"><span>Reopen <b id="rbN">0</b> file<span id="rbS">s</span> from your last session?</span>
+      <span class="rb3"><button id="rbYes" class="pri">Reopen</button><button id="rbNo">Not now</button></span></div>
+    <div id="selWarn"><div class="sw1">That's outside your selection</div><div class="sw2">Edits only apply inside the selected area.</div>
+      <div class="sw3"><button id="selWarnClear" class="pri">Clear selection</button><button id="selWarnOk">Keep it</button></div></div></div>
+  <div class="side">
+    <div class="sec">
+      <h3>Color <span class="sp"></span><span style="text-transform:none;letter-spacing:0">X swaps</span></h3>
+      <div class="row">
+        <div class="swatches">
+          <div class="sw" id="swBg" title="Secondary color (right-click draws with this)"><i></i><input type="color" id="cBg"></div>
+          <div class="sw" id="swFg" title="Primary color"><i></i><input type="color" id="cFg"></div>
+        </div>
+        <div style="flex:1;display:grid;gap:5px">
+          <div class="row"><input type="text" id="hex" value="#000000" style="width:84px;font-family:ui-monospace,Consolas,monospace"><button class="mini" id="bSwap">⇄</button></div>
+          <label>Alpha <input type="range" id="alpha" min="0" max="255" value="255" style="width:100px"><span id="alphaV" style="color:var(--text);width:26px">255</span></label>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px"><span style="color:var(--dim)">Recent</span><div class="pal" id="recent" style="flex:1"></div></div>
+      <div class="row" style="margin-top:8px"><button class="mini" id="bPalImg" title="Fill the palette with the colors used in this image">Palette from image</button><button class="mini" id="bPalDef">Default</button></div>
+      <div class="pal" id="pal" style="margin-top:6px"></div>
+    </div>
+
+    <div class="sec">
+      <h3>Cells <span class="sp"></span><span style="text-transform:none;letter-spacing:0" id="cellInfo"></span></h3>
+      <div class="row" style="margin-bottom:6px">
+        <button class="mini" id="cCopy" title="Copy selected cells (Ctrl+C)">Copy</button>
+        <button class="mini" id="cPaste" title="Paste into the selected cells (Ctrl+V)">Paste</button>
+        <button class="mini" id="cClear" title="Clear (Delete)">Clear</button>
+        <button class="mini" id="cFH" title="Flip horizontally (H)">Flip H</button>
+        <button class="mini" id="cFV" title="Flip vertically (Shift+H)">Flip V</button>
+        <button class="mini" id="cRot" title="Rotate 90° clockwise (square cells)">Rot</button>
+        <button class="mini" id="cDup" title="Duplicate into the next cell(s) to the right">Dup →</button>
+      </div>
+      <div class="row" style="margin-bottom:8px">
+        <span style="color:var(--dim)">Nudge</span>
+        <button class="mini" data-n="-1,0">◀</button><button class="mini" data-n="0,-1">▲</button><button class="mini" data-n="0,1">▼</button><button class="mini" data-n="1,0">▶</button>
+        <label><input type="checkbox" id="nWrap"> wrap</label>
+      </div>
+      <div id="cells"></div>
+      <div style="color:var(--dim);margin-top:6px;font-size:11px">Click to select · Shift adds · Ctrl toggles · Ctrl+Shift adds a box · drag a cell onto another to copy (hold Shift to swap) · click R/C headers for rows and columns</div>
+    </div>
+
+    <div class="sec">
+      <h3>Animation</h3>
+      <div id="animWrap" class="chk"><canvas id="anim" width="64" height="64"></canvas></div>
+      <div class="row" style="margin-top:8px">
+        <button id="aPlay" class="mini on" style="width:34px">❚❚</button>
+        <label>FPS <input type="range" id="aFps" min="1" max="24" value="6" style="width:90px"><span id="aFpsV" style="color:var(--text);width:18px">6</span></label>
+        <label><input type="checkbox" id="aPing"> ping-pong</label>
+      </div>
+      <div class="row">
+        <label>Play
+          <select id="aMode"><option value="row">Active row</option><option value="col">Active column</option><option value="sel">Selected cells</option><option value="custom">Custom list</option></select>
+        </label>
+        <label><input type="checkbox" id="aAll"> all rows</label>
+      </div>
+      <div class="row">
+        <label id="aPatL">Order <input type="text" id="aPat" placeholder="e.g. 2,1,2,3 (blank = all)" style="width:150px"></label>
+      </div>
+      <div class="row">
+        <label>Preview bg <select id="aBg"><option value="checker">Checker</option><option value="#202020">Dark</option><option value="#808080">Grey</option><option value="#e8e8e8">Light</option><option value="#3a7d44">Green</option></select></label>
+        <button class="mini" id="aGif">Export GIF…</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>History</h3>
+      <div id="hist"></div>
+    </div>
+  </div>
+</div>
+
+<div class="status">
+  <span id="sPos">–</span><span id="sCell">–</span><span id="sDoc">–</span><span id="sTip"></span>
+  <span class="sp"></span>
+  <button id="zOut">−</button><span id="sZoom" style="min-width:46px;text-align:center">800%</span><button id="zIn">+</button><button id="zFit" title="Fit (0)">Fit</button>
+</div>
+
+<div id="cc">
+  <div class="cch">
+    <b style="color:var(--accent);font-size:15px">Character Creator</b>
+    <button id="ccPick" class="pri">Choose folder…</button>
+    <button id="ccLast" style="display:none"></button>
+    <button id="ccReload" title="Re-read the pieces from disk (after editing them)">↻ Reload</button>
+    <span id="ccInfo" class="dim"></span>
+    <span class="sp"></span>
+    <button id="ccClose">✕ Back to editor</button>
+  </div>
+  <div id="ccEmpty">
+    <h2>Build characters from layered pieces</h2>
+    Pick a folder that contains one subfolder per part (for example <b>Body</b>, <b>Hair</b>, <b>Outfit</b>, <b>Accessory 1</b>).
+    I scan every subfolder for images, group them by sheet size, and let you set the stacking order. A random character is built from one piece of each folder, shown as a full sheet and as an animation.
+    <br><br><button id="ccPick2" class="pri">Choose folder…</button>
+    <div style="margin-top:14px;font-size:12px">Works best in Chrome or Edge: they let me save edited pieces straight back into the folder.</div>
+  </div>
+  <div class="ccb" id="ccBody" style="display:none">
+    <div class="ccl">
+      <div class="top2">
+        <label>Sheet size <select id="ccGroup" style="flex:1"></select></label>
+        <div class="row"><label>Grid <input type="number" id="ccCols" min="1" max="64"> columns ×</label><label><input type="number" id="ccRows" min="1" max="64"> rows</label></div>
+      </div>
+      <h4>Stack order · top layer first</h4>
+      <div id="ccList"></div>
+    </div>
+    <div class="ccm">
+      <div class="row">
+        <button id="ccRand" class="pri" title="New random character (R) — locked parts stay">🎲 Randomize</button>
+        <button id="ccToEd" title="Open this character in the editor, one layer per part">Open in editor as layers</button>
+        <button id="ccPng">Download PNG</button>
+        <label><input type="checkbox" id="ccGridChk" checked> show grid</label>
+      </div>
+      <div class="ccview">
+        <div><div class="dim" style="margin-bottom:4px">Full sheet · click a row to preview its animation</div><canvas id="ccMain" class="chk" style="cursor:pointer"></canvas></div>
+        <div><div class="dim" style="margin-bottom:4px">Animation</div><canvas id="ccAnim" class="chk"></canvas>
+          <div class="row" style="margin-top:8px"><label>Row <select id="ccRowSel"></select></label><label>FPS <input type="range" id="ccFps" min="1" max="16" value="6" style="width:90px"></label></div>
+</div>
+      </div>
+      <div class="dim" id="ccHint" style="font-size:12px"></div>
+    </div>
+  </div>
+  <input type="file" id="ccDirIn" webkitdirectory hidden>
+</div>
+
+<div id="modalBg"><div class="modal" id="modal"></div></div>
+<div id="toast"></div>
+<div id="dropHint">Drop a PNG to open it</div>
+<input type="file" id="fileIn" accept="image/png,image/gif,image/webp,image/jpeg,.gchproj" hidden>
+
+<script src="js/core.js"></script>
+<script src="js/view.js"></script>
+<script src="js/cell-ops.js"></script>
+<script src="js/tools.js"></script>
+<script src="js/colors.js"></script>
+<script src="js/cells-panel.js"></script>
+<script src="js/animation.js"></script>
+<script src="js/gif.js"></script>
+<script src="js/dialogs.js"></script>
+<script src="js/files.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/layers.js"></script>
+<script src="js/character-creator.js"></script>
+<script src="js/tabs.js"></script>
+<script src="js/adjust-tools.js"></script>
+<script src="js/wand.js"></script>
+<script src="js/session.js"></script>
+<script src="js/boot.js"></script>
+</body>
+</html>
