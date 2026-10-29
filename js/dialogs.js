@@ -36,12 +36,14 @@ function gridDialog({mode,img,cols,rows,fw,fh,cands}){
       <span>Rows</span><input type="number" id="gR" min="1" max="256" value="${rows}">
       <span>Cell width</span><input type="number" id="gW" min="1" max="2048" value="${fw}">
       <span>Cell height</span><input type="number" id="gH" min="1" max="2048" value="${fh}">
-      ${isResize?`<span>Anchor</span><span class="row"><select id="gAH"><option value="0">Left</option><option value="0.5" selected>Center</option><option value="1">Right</option></select><select id="gAV"><option value="0">Top</option><option value="0.5">Middle</option><option value="1" selected>Bottom</option></select></span>`:''}
+      ${isResize?`<span>Add / remove at</span><select id="gPos"><option value="end">End of the sheet</option><option value="start">Start of the sheet</option><option value="after">After the active cell (C${S.active.c+1}, R${S.active.r+1})</option><option value="before">Before the active cell (C${S.active.c+1}, R${S.active.r+1})</option></select>
+      <span>Cell size change</span><select id="gScale"><option value="crop">Crop or pad (keep pixels as they are)</option><option value="stretch">Stretch sprites to the new size</option><option value="fit">Fit sprites (keep proportions)</option></select>
+      <span>Anchor</span><span class="row"><select id="gAH"><option value="0">Left</option><option value="0.5" selected>Center</option><option value="1">Right</option></select><select id="gAV"><option value="0">Top</option><option value="0.5">Middle</option><option value="1" selected>Bottom</option></select></span>`:''}
     </div>${isOpen?'<div id="gChips" class="row" style="margin-top:10px"></div><canvas id="gPrev" width="300" height="200" style="display:block;margin:10px auto 0;width:300px;height:200px;image-rendering:pixelated;background:#14151a;border:1px solid var(--line);border-radius:6px"></canvas>':''}<div class="info" id="gInfo"></div>`;
     let done=false;
     const close=modal(isNew?'New sprite sheet':isOpen?'Set up the grid':'Grid and cell size',body,()=>{
       const v=read(); if(!v.ok) return false; done=true;
-      v.ah=isResize?+$('#gAH').value:0; v.av=isResize?+$('#gAV').value:0; res(v); return true;
+      v.ah=isResize?+$('#gAH').value:0; v.av=isResize?+$('#gAV').value:0; v.pos=isResize?$('#gPos').value:'end'; v.scale=isResize?$('#gScale').value:'crop'; res(v); return true;
     },isNew?'Create':isOpen?'Open':'Apply',()=>{ if(!done) res(null); });
     const $c=$('#gC'),$r=$('#gR'),$w=$('#gW'),$h=$('#gH');
     function read(){ const v={cols:+$c.value|0,rows:+$r.value|0,fw:+$w.value|0,fh:+$h.value|0}; v.ok=v.cols>0&&v.rows>0&&v.fw>0&&v.fh>0&&v.cols*v.fw<=8192&&v.rows*v.fh<=8192; return v; }
@@ -50,6 +52,13 @@ function gridDialog({mode,img,cols,rows,fw,fh,cands}){
       if(!v.ok){ el.textContent='Enter positive sizes (max 8192 px total).'; el.classList.add('warn'); return; }
       const tw=v.cols*v.fw, th=v.rows*v.fh;
       if(isOpen && (tw!==iw||th!==ih)){ el.textContent=`Image is ${iw}×${ih}; grid will be ${tw}×${th} (image placed top-left, cropped or padded).`; el.classList.add('warn'); }
+      else if(isResize){
+        const dc=v.cols-S.cols, dr=v.rows-S.rows, bits=[];
+        if(dc) bits.push((dc>0?'+':'−')+Math.abs(dc)+' column'+(Math.abs(dc)===1?'':'s'));
+        if(dr) bits.push((dr>0?'+':'−')+Math.abs(dr)+' row'+(Math.abs(dr)===1?'':'s'));
+        if(v.fw!==S.fw||v.fh!==S.fh) bits.push('cells '+S.fw+'×'+S.fh+' → '+v.fw+'×'+v.fh);
+        el.textContent=(bits.length?bits.join(', ')+'. ':'No change. ')+`${v.cols*v.rows} cells · sheet ${tw}×${th}px`;
+      }
       else el.textContent=`${v.cols*v.rows} cells · sheet ${tw}×${th}px`+(isOpen?' (matches image)':'');
       if(isOpen) drawPrev(v);
     }
@@ -78,6 +87,7 @@ function gridDialog({mode,img,cols,rows,fw,fh,cands}){
       $w.oninput=()=>{ const w=+$w.value; if(w>0&&iw%w===0) $c.value=iw/w; info(); };
       $h.oninput=()=>{ const h=+$h.value; if(h>0&&ih%h===0) $r.value=ih/h; info(); };
     } else [$c,$r,$w,$h].forEach(el=>el.oninput=info);
+    if(isResize){ const upd=()=>{ $('#gAH').disabled=$('#gAV').disabled=$('#gScale').value==='stretch'; info(); }; $('#gScale').onchange=upd; $('#gPos').onchange=info; upd(); }
     if(isNew){ $('#gPre').onchange=e=>{ const p=PRESETS[+e.target.value]; if(p[1]){ $c.value=p[1]; $r.value=p[2]; $w.value=p[3]; $h.value=p[4]; } info(); }; $('#gPre').value=0; $('#gPre').onchange({target:$('#gPre')}); }
     info();
   });
@@ -106,14 +116,40 @@ function detectGrid(img){
   const good=out.filter(o=>o.n<=1024 && filled(o.cols,o.rows)>=.5);
   return (good.length?good:out).slice(0,6);
 }
+// Where each old row/column ends up. Growing inserts the new ones at pos (start / end / after or before the active cell);
+// shrinking removes them from the same place. Removed ones map to -1.
+function indexMap(nOld,nNew,pos,active){
+  const d=nNew-nOld, map=[];
+  if(d>=0){
+    const at= pos==='start'?0 : pos==='after'?Math.min(nOld,active+1) : pos==='before'?Math.min(nOld,active) : nOld;
+    for(let k=0;k<nOld;k++) map.push(k<at?k:k+d);
+  } else {
+    const rm=-d; let j= pos==='start'?0 : pos==='after'?active+1 : pos==='before'?active-rm : nOld-rm; j=clamp(j,0,nOld-rm);
+    for(let k=0;k<nOld;k++) map.push(k<j?k : k<j+rm?-1 : k-rm);
+  }
+  return map;
+}
 function applyLayout(v){
   const olds=layers, o={fw:S.fw,fh:S.fh,cols:S.cols,rows:S.rows}, nw=v.cols*v.fw, nh=v.rows*v.fh;
+  const cmap=indexMap(o.cols,v.cols,v.pos||'end',S.active.c), rmap=indexMap(o.rows,v.rows,v.pos||'end',S.active.r);
+  const sameSize=o.fw===v.fw&&o.fh===v.fh, mode=sameSize?'crop':(v.scale||'crop'), ah=v.ah??0.5, av=v.av??1;
+  // crop / pad: copy the overlapping part, lined up by the anchor
   const cw=Math.min(o.fw,v.fw), chh=Math.min(o.fh,v.fh);
-  const sx=Math.floor((o.fw-cw)*(v.ah??0)), sy=Math.floor((o.fh-chh)*(v.av??0));
-  const dx=Math.floor((v.fw-cw)*(v.ah??0)), dy=Math.floor((v.fh-chh)*(v.av??0));
-  layers=olds.map(ol=>{ const L=newLayer(nw,nh,ol.name); L.visible=ol.visible; L.opacity=ol.opacity;
-    for(let r=0;r<Math.min(o.rows,v.rows);r++) for(let c=0;c<Math.min(o.cols,v.cols);c++)
-      L.ctx.drawImage(ol.cv, c*o.fw+sx, r*o.fh+sy, cw, chh, c*v.fw+dx, r*v.fh+dy, cw, chh);
+  const sx=Math.floor((o.fw-cw)*ah), sy=Math.floor((o.fh-chh)*av), dx=Math.floor((v.fw-cw)*ah), dy=Math.floor((v.fh-chh)*av);
+  // stretch / fit: every output pixel is a straight copy of one source pixel (no blending)
+  let sw=v.fw, sh=v.fh;
+  if(mode==='fit'){ const k=Math.min(v.fw/o.fw,v.fh/o.fh); sw=Math.max(1,Math.round(o.fw*k)); sh=Math.max(1,Math.round(o.fh*k)); }
+  const ox=Math.floor((v.fw-sw)*ah), oy=Math.floor((v.fh-sh)*av);
+  layers=olds.map(ol=>{
+    const L=newLayer(nw,nh,ol.name); L.visible=ol.visible; L.opacity=ol.opacity;
+    for(let r=0;r<o.rows;r++) for(let c=0;c<o.cols;c++){
+      const nc=cmap[c], nr=rmap[r]; if(nc<0||nr<0) continue;
+      if(mode==='crop'){ L.ctx.drawImage(ol.cv, c*o.fw+sx, r*o.fh+sy, cw, chh, nc*v.fw+dx, nr*v.fh+dy, cw, chh); continue; }
+      const src=new Uint32Array(ol.ctx.getImageData(c*o.fw,r*o.fh,o.fw,o.fh).data.buffer), out=L.ctx.createImageData(v.fw,v.fh), dst=new Uint32Array(out.data.buffer);
+      for(let y=0;y<sh;y++){ const syy=Math.min(o.fh-1,Math.floor((y+.5)*o.fh/sh));
+        for(let x=0;x<sw;x++) dst[(y+oy)*v.fw+x+ox]=src[syy*o.fw+Math.min(o.fw-1,Math.floor((x+.5)*o.fw/sw))]; }
+      L.ctx.putImageData(out,nc*v.fw,nr*v.fh);
+    }
     return L; });
   useLayer(activeL); sizeComp(nw,nh);
   S.fw=v.fw;S.fh=v.fh;S.cols=v.cols;S.rows=v.rows; S.sel=null; S.floating=null;
