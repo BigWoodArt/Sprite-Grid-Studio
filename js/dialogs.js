@@ -39,7 +39,11 @@ function gridDialog({mode,img,cols,rows,fw,fh,cands}){
       ${isResize?`<span>Add / remove at</span><select id="gPos"><option value="end">End of the sheet</option><option value="start">Start of the sheet</option><option value="after">After the active cell (C${S.active.c+1}, R${S.active.r+1})</option><option value="before">Before the active cell (C${S.active.c+1}, R${S.active.r+1})</option></select>
       <span>Cell size change</span><select id="gScale"><option value="crop">Crop or pad (keep pixels as they are)</option><option value="stretch">Stretch sprites to the new size</option><option value="fit">Fit sprites (keep proportions)</option></select>
       <span>Anchor</span><span class="row"><select id="gAH"><option value="0">Left</option><option value="0.5" selected>Center</option><option value="1">Right</option></select><select id="gAV"><option value="0">Top</option><option value="0.5">Middle</option><option value="1" selected>Bottom</option></select></span>`:''}
-    </div>${isOpen?'<div id="gChips" class="row" style="margin-top:10px"></div><canvas id="gPrev" width="300" height="200" style="display:block;margin:10px auto 0;width:300px;height:200px;image-rendering:pixelated;background:#14151a;border:1px solid var(--line);border-radius:6px"></canvas>':''}<div class="info" id="gInfo"></div>`;
+    </div>${isOpen?'<div id="gChips" class="row" style="margin-top:10px"></div><canvas id="gPrev" width="300" height="200" style="display:block;margin:10px auto 0;width:300px;height:200px;image-rendering:pixelated;background:#14151a;border:1px solid var(--line);border-radius:6px"></canvas>':''}${isResize?`<div class="row" id="gQuick" style="margin-top:12px;align-items:center">
+      <button class="mini" data-q="c-1" title="Remove one column">− Column</button><button class="mini" data-q="c+1" title="Add one column">+ Column</button>
+      <button class="mini" data-q="r-1" title="Remove one row">− Row</button><button class="mini" data-q="r+1" title="Add one row">+ Row</button>
+      <span style="margin-left:auto;font-size:11px;color:var(--dim)"><b style="color:#5fd38d">■</b> new &nbsp;<b style="color:#ff5d5d">■</b> removed</span></div>
+    <canvas id="gPrev" width="300" height="200" style="display:block;margin:8px auto 0;width:300px;height:200px;image-rendering:pixelated;background:#14151a;border:1px solid var(--line);border-radius:6px"></canvas>`:''}<div class="info" id="gInfo"></div>`;
     let done=false;
     const close=modal(isNew?'New sprite sheet':isOpen?'Set up the grid':'Grid and cell size',body,()=>{
       const v=read(); if(!v.ok) return false; done=true;
@@ -61,6 +65,37 @@ function gridDialog({mode,img,cols,rows,fw,fh,cands}){
       }
       else el.textContent=`${v.cols*v.rows} cells · sheet ${tw}×${th}px`+(isOpen?' (matches image)':'');
       if(isOpen) drawPrev(v);
+      if(isResize) drawResizePrev(v);
+    }
+    // Resize preview: the sheet as it will be, with new rows/columns in green and ones that will be removed in red
+    function drawResizePrev(v){
+      const cv=$('#gPrev'), g=cv.getContext('2d'); g.clearRect(0,0,cv.width,cv.height);
+      const pos=$('#gPos').value, cm=indexMap(S.cols,v.cols,pos,S.active.c), rm=indexMap(S.rows,v.rows,pos,S.active.r);
+      const axis=(nOld,nNew,map)=>{ const out=[];
+        if(nNew>=nOld){ for(let i=0;i<nNew;i++){ const k=map.indexOf(i); out.push(k>=0?{old:k}:{add:true}); } }
+        else for(let k=0;k<nOld;k++) out.push({old:k,rm:map[k]<0});
+        return out; };
+      const cols=axis(S.cols,v.cols,cm), rows=axis(S.rows,v.rows,rm), ratio=S.fw/S.fh;
+      const cw=Math.min((cv.width-6)/cols.length, (cv.height-6)/rows.length*ratio), ch=cw/ratio;
+      const ox=(cv.width-cw*cols.length)/2, oy=(cv.height-ch*rows.length)/2;
+      refreshComp(); g.imageSmoothingEnabled=false;
+      rows.forEach((R,j)=>cols.forEach((C,i)=>{
+        const x=ox+i*cw, y=oy+j*ch;
+        if(C.add||R.add){
+          g.fillStyle='rgba(95,211,141,.28)'; g.fillRect(x,y,cw,ch);
+          if(cw>=12&&ch>=12){ g.fillStyle='#5fd38d'; g.font='bold '+Math.min(cw,ch,24)*0.7+'px system-ui'; g.textAlign='center'; g.textBaseline='middle'; g.fillText('+',x+cw/2,y+ch/2); }
+        } else {
+          g.drawImage(comp,C.old*S.fw,R.old*S.fh,S.fw,S.fh,x,y,cw,ch);
+          if(C.rm||R.rm){
+            g.fillStyle='rgba(255,93,93,.5)'; g.fillRect(x,y,cw,ch);
+            g.strokeStyle='#ff5d5d'; g.lineWidth=2; g.beginPath(); g.moveTo(x+3,y+3); g.lineTo(x+cw-3,y+ch-3); g.moveTo(x+cw-3,y+3); g.lineTo(x+3,y+ch-3); g.stroke();
+          }
+        }
+        g.strokeStyle=(C.add||R.add)?'rgba(95,211,141,.9)':(C.rm||R.rm)?'rgba(255,93,93,.9)':'rgba(255,157,46,.8)'; g.lineWidth=1; g.strokeRect(Math.round(x)+.5,Math.round(y)+.5,Math.round(cw)-1,Math.round(ch)-1);
+      }));
+      // the active cell, so "after / before the active cell" is easy to follow
+      const ai=cols.findIndex(C=>C.old===S.active.c), aj=rows.findIndex(R=>R.old===S.active.r);
+      if(ai>=0&&aj>=0){ g.strokeStyle='#fff'; g.lineWidth=2; g.strokeRect(ox+ai*cw+1,oy+aj*ch+1,cw-2,ch-2); }
     }
     function drawPrev(v){
       const cv=$('#gPrev'), g=cv.getContext('2d'); g.clearRect(0,0,cv.width,cv.height);
@@ -87,6 +122,8 @@ function gridDialog({mode,img,cols,rows,fw,fh,cands}){
       $w.oninput=()=>{ const w=+$w.value; if(w>0&&iw%w===0) $c.value=iw/w; info(); };
       $h.oninput=()=>{ const h=+$h.value; if(h>0&&ih%h===0) $r.value=ih/h; info(); };
     } else [$c,$r,$w,$h].forEach(el=>el.oninput=info);
+    if(isResize) $('#gQuick').onclick=e=>{ const b=e.target.closest('[data-q]'); if(!b) return;
+      const el=b.dataset.q[0]==='c'?$c:$r, d=b.dataset.q.endsWith('+1')?1:-1; el.value=clamp((+el.value||1)+d,1,256); info(); };
     if(isResize){ const upd=()=>{ $('#gAH').disabled=$('#gAV').disabled=$('#gScale').value==='stretch'; info(); }; $('#gScale').onchange=upd; $('#gPos').onchange=info; upd(); }
     if(isNew){ $('#gPre').onchange=e=>{ const p=PRESETS[+e.target.value]; if(p[1]){ $c.value=p[1]; $r.value=p[2]; $w.value=p[3]; $h.value=p[4]; } info(); }; $('#gPre').value=0; $('#gPre').onchange({target:$('#gPre')}); }
     info();
