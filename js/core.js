@@ -2,7 +2,7 @@
 // Shared helpers, app state and undo history
 
 /* ---------- helpers ---------- */
-const APP_VERSION = '0.1.5';
+const APP_VERSION = '0.1.6';
 const $ = s => document.querySelector(s);
 // A section whose header folds it away; the state is remembered. Returns a function that says whether it is folded.
 function setupFold(secId,headId,key,after){
