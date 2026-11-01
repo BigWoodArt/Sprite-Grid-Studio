@@ -24,9 +24,9 @@ label input[type=checkbox]{accent-color:var(--accent)}
 .top .sep,.opts .sep{width:1px;align-self:stretch;background:var(--line);margin:6px 4px}
 .top .fname{margin-left:auto;color:var(--dim)}
 .opts{display:flex;align-items:center;gap:12px;padding:0 10px;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto;white-space:nowrap}
-.main{display:grid;grid-template-columns:48px 190px 1fr 300px;min-height:0}
+.main{display:grid;grid-template-columns:var(--toolw,84px) 190px 1fr 300px;min-height:0}
 .tools{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:4px;padding:6px;align-items:center;overflow-y:auto}
-.tool{width:34px;height:34px;padding:0;display:grid;place-items:center}
+.tool{width:34px;height:34px;padding:0;display:flex;align-items:center;justify-content:center;gap:8px}
 .tool svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 #stage{position:relative;min-width:0;min-height:0;overflow:hidden;background:#101114}
 #view{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
@@ -140,7 +140,7 @@ label input[type=checkbox]{accent-color:var(--accent)}
 #selWarn .sw2{font-size:11px;color:var(--dim)}
 #selWarn .sw3{display:flex;gap:6px}
 #selWarn button{padding:2px 8px;font-size:11px}
-.tsep{width:26px;height:1px;background:var(--line);margin:3px 0;flex:none}
+.tsep{width:100%;height:1px;background:var(--line);margin:3px 0;flex:none}
 #tp{position:absolute;left:12px;bottom:12px;width:310px;max-height:calc(100% - 24px);overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:0 10px 30px #0009;display:none;z-index:5;user-select:none}
 #tp h4{margin:0 0 8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);display:flex;gap:6px;align-items:center}
 .tpr{display:grid;grid-template-columns:96px 1fr 44px;gap:6px;align-items:center;margin:5px 0}
@@ -156,7 +156,7 @@ label input[type=checkbox]{accent-color:var(--accent)}
 .gs{display:grid;grid-template-columns:34px 1fr 1fr 24px;gap:6px;align-items:center;margin:4px 0}
 .gs input[type=color]{width:34px;height:24px;padding:0;border:1px solid var(--line);border-radius:4px;background:none}
 .gs input[type=number]{width:100%}
-@media(max-width:900px){.main{grid-template-columns:48px 150px 1fr 240px}}
+@media(max-width:900px){.main{grid-template-columns:var(--toolw,84px) 150px 1fr 240px}}
 
 .spin{display:inline-flex;flex-direction:column;gap:1px;margin-left:2px;vertical-align:middle}
 .spin button{padding:0 6px;font-size:8px;line-height:10px;height:12px;border-radius:3px}
@@ -179,7 +179,9 @@ label input[type=checkbox]{accent-color:var(--accent)}
 .th.over.swap{border-color:var(--ok)}
 .th.over.swap::after{content:"⇄";position:absolute;inset:0;display:grid;place-items:center;font-size:18px;color:var(--ok);background:#000a;pointer-events:none}
 
-.tool{position:relative}
-.tool .key{position:absolute;right:3px;bottom:1px;font-size:9px;font-weight:700;line-height:1;color:var(--dim);pointer-events:none}
+.tool{width:100%}                       /* icon on the left, shortcut letter beside it (never on top of it) */
+.tool .key{flex:none;width:14px;text-align:left;font-size:14px;font-weight:700;line-height:1;color:var(--dim);pointer-events:none}
 .tool.on .key{color:#ffd9a6}
+body.nokeys{--toolw:48px}
+body.nokeys .tool{width:34px}
 body.nokeys .tool .key{display:none}
