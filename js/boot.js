@@ -3,7 +3,7 @@
 
 /* ---------- boot ---------- */
 new ResizeObserver(resizeView).observe($('#stage'));
-$('#ver').textContent='v'+APP_VERSION;
+$('#ver').textContent='v'+APP_VERSION; document.body.classList.toggle('nokeys',!S.showKeys);
 buildTools(); setTool('pencil'); renderPalettes(); syncColorUI();
 anim.fps=store.get('fps',6); $('#aFps').value=anim.fps; $('#aFpsV').textContent=anim.fps;
 setDoc(S.cols*S.fw, S.rows*S.fh);

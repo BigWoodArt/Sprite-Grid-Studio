@@ -178,3 +178,8 @@ label input[type=checkbox]{accent-color:var(--accent)}
 
 .th.over.swap{border-color:var(--ok)}
 .th.over.swap::after{content:"⇄";position:absolute;inset:0;display:grid;place-items:center;font-size:18px;color:var(--ok);background:#000a;pointer-events:none}
+
+.tool{position:relative}
+.tool .key{position:absolute;right:3px;bottom:1px;font-size:9px;font-weight:700;line-height:1;color:var(--dim);pointer-events:none}
+.tool.on .key{color:#ffd9a6}
+body.nokeys .tool .key{display:none}

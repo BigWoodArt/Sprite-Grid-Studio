@@ -31,7 +31,8 @@ function buildTools(){
   for(const [id,tip,svg] of TOOLS){
     if(id==='sep'){ const d=document.createElement('div'); d.className='tsep'; box.appendChild(d); continue; }
     const b=document.createElement('button'); b.className='tool'; b.dataset.tool=id; b.title=tip;
-    b.innerHTML=`<svg viewBox="0 0 24 24">${svg}</svg>`; b.onclick=()=>setTool(id); box.appendChild(b);
+    const kk=Object.keys(keyTool).find(k=>keyTool[k]===id);
+    b.innerHTML=`<svg viewBox="0 0 24 24">${svg}</svg>${kk?`<span class="key">${kk.toUpperCase()}</span>`:''}`; b.onclick=()=>setTool(id); box.appendChild(b);
   }
 }
 function setTool(t){
