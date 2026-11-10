@@ -15,7 +15,7 @@ const TOOLS = [
   ['sep'],
   ['picker','Eyedropper (I) — or Alt+click','<path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/>'],
   ['sep'],
-  ['cell','Select cells (C) — Shift adds, Ctrl toggles, drag for a box','<rect x="3" y="3" width="18" height="18"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>'],
+  ['cell','Select cells (C) — Shift-click selects up to a cell, Ctrl-click adds one, drag for a box','<rect x="3" y="3" width="18" height="18"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>'],
   ['marquee','Select region (M) — drag a box; hold Shift to add more regions','<rect x="4" y="4" width="16" height="16" stroke-dasharray="3 3"/>'],
   ['wand','Magic wand (Y) — select similar colors; Shift adds, Ctrl subtracts','<path d="m14 4 1.2 2.8L18 8l-2.8 1.2L14 12l-1.2-2.8L10 8l2.8-1.2z"/><path d="m3 21 9.5-9.5"/><path d="M19 14v4M17 16h4"/>'],
   ['move','Move pixels (V) — drag a cell’s contents','<path d="M12 2v20M2 12h20m-14-7 4-3 4 3M8 19l4 3 4-3M5 8l-3 4 3 4M19 8l3 4-3 4"/>'],
@@ -81,9 +81,12 @@ view.addEventListener('pointerdown',e=>{
   if(t==='wand'){ wandClick(e,p); return; }
   if(t==='cell'){
     if(!inDoc(p.x,p.y)) return; const {c,r}=cellAt(p.x,p.y);
-    if((e.ctrlKey||e.metaKey)&&!e.shiftKey){ selectCell(c,r,{ctrl:true}); return; }
-    const base=e.shiftKey?new Set(S.cellSel):new Set();      // Shift keeps the current selection and adds to it
-    S.cellSel=new Set([...base,key(c,r)]); S.active={c,r}; drag={kind:'cells',start:{c,r},base}; syncCellUI(); return;
+    if((e.ctrlKey||e.metaKey)&&!e.shiftKey){ selectCell(c,r,{ctrl:true}); return; }                 // Ctrl: add / remove one cell
+    if(e.shiftKey){                                                                                  // Shift: everything from the anchor up to here (Ctrl+Shift keeps the old selection too)
+      const anchor=selAnchor(), base=(e.ctrlKey||e.metaKey)?new Set(S.cellSel):new Set();
+      selectCell(c,r,{shift:true,ctrl:e.ctrlKey||e.metaKey}); drag={kind:'cells',start:anchor,base}; return;
+    }
+    S.cellSel=new Set([key(c,r)]); S.active={c,r}; S.anchor={c,r}; drag={kind:'cells',start:{c,r},base:new Set()}; syncCellUI(); return;
   }
   if(PANEL_TOOLS.includes(t)&&t!=='gradient'){      // adjustment tools: click a cell to pick what they apply to
     if(inDoc(p.x,p.y)){ if(TP.dirty) tpApply(); S.sel=null; const {c,r}=cellAt(p.x,p.y); selectCell(c,r,{ctrl:e.ctrlKey||e.metaKey,shift:e.shiftKey}); tpCapture(); }
