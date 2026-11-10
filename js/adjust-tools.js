@@ -191,7 +191,7 @@ $('#tp').addEventListener('input',e=>{
 });
 $('#tp').addEventListener('click',e=>{
   const b=e.target.closest('[data-act]'); if(!b) return; const a=b.dataset.act, P=TP.params[TP.tool];
-  if(a==='apply') tpApply();
+  if(a==='apply'){ tpApply(); setTool('cell'); }   // Apply commits and closes the panel
   else if(a==='reset') tpCancel();
   else if(a==='reroll'){ P.seed++; tpRender(); }
   else if(a==='cw') tpInstant('Rotate 90° CW',r=>rot90(r,1));
