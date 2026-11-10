@@ -43,7 +43,10 @@ function gridDialog({mode,img,cols,rows,fw,fh,cands}){
       <button class="mini" data-q="c-1" title="Remove one column">− Column</button><button class="mini" data-q="c+1" title="Add one column">+ Column</button>
       <button class="mini" data-q="r-1" title="Remove one row">− Row</button><button class="mini" data-q="r+1" title="Add one row">+ Row</button>
       <span style="margin-left:auto;font-size:11px;color:var(--dim)"><b style="color:#5fd38d">■</b> new &nbsp;<b style="color:#ff5d5d">■</b> removed</span></div>
-    <canvas id="gPrev" width="300" height="200" style="display:block;margin:8px auto 0;width:300px;height:200px;image-rendering:pixelated;background:#14151a;border:1px solid var(--line);border-radius:6px"></canvas>`:''}<div class="info" id="gInfo"></div>`;
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+      <canvas id="gPrev" width="268" height="210" style="width:268px;height:210px;image-rendering:pixelated;background:#14151a;border:1px solid var(--line);border-radius:6px"></canvas>
+      <canvas id="gCell" width="200" height="210" style="width:200px;height:210px;image-rendering:pixelated;background:#14151a;border:1px solid var(--line);border-radius:6px"></canvas>
+    </div>`:''}<div class="info" id="gInfo"></div>`;
     let done=false;
     const close=modal(isNew?'New sprite sheet':isOpen?'Set up the grid':'Grid and cell size',body,()=>{
       const v=read(); if(!v.ok) return false; done=true;
@@ -65,7 +68,23 @@ function gridDialog({mode,img,cols,rows,fw,fh,cands}){
       }
       else el.textContent=`${v.cols*v.rows} cells · sheet ${tw}×${th}px`+(isOpen?' (matches image)':'');
       if(isOpen) drawPrev(v);
-      if(isResize) drawResizePrev(v);
+      if(isResize){ drawResizePrev(v); drawCellPrev(v); }
+    }
+    // Single-cell preview: the active cell as it will be, large. Dotted outline = where the old cell's art ends up.
+    function drawCellPrev(v){
+      const cv=$('#gCell'), g=cv.getContext('2d'); g.clearRect(0,0,cv.width,cv.height); g.textAlign='center'; g.textBaseline='alphabetic';
+      const o={fw:S.fw,fh:S.fh,cols:S.cols,rows:S.rows}, label='Active cell C'+(S.active.c+1)+', R'+(S.active.r+1);
+      g.fillStyle='#9aa0b2'; g.font='11px system-ui'; g.fillText(label,cv.width/2,14);
+      const cm=indexMap(S.cols,v.cols,$('#gPos').value,S.active.c), rm=indexMap(S.rows,v.rows,$('#gPos').value,S.active.r);
+      if(cm[S.active.c]<0||rm[S.active.r]<0){ g.fillStyle='#ff5d5d'; g.font='bold 13px system-ui'; g.fillText('This cell will be removed',cv.width/2,cv.height/2); return; }
+      const vv={...v,ah:+$('#gAH').value,av:+$('#gAV').value,scale:$('#gScale').value}, M=cellMapper(o,vv);
+      const t=mk(v.fw,v.fh), tg=t.getContext('2d'); refreshComp(); M.place(comp,cctx,S.active.c,S.active.r,tg,0,0);
+      const areaW=cv.width-20, areaH=cv.height-48, s=Math.min(areaW/v.fw,areaH/v.fh), k=s>=1?Math.floor(s):s;
+      const w=v.fw*k, h=v.fh*k, x=Math.round((cv.width-w)/2), y=Math.round(22+(areaH-h)/2);
+      g.imageSmoothingEnabled=false; g.drawImage(t,0,0,v.fw,v.fh,x,y,w,h);
+      g.strokeStyle='rgba(255,157,46,.95)'; g.lineWidth=1; g.strokeRect(x-.5,y-.5,w+1,h+1);                          // the new cell
+      const f=M.foot; if(f.x!==0||f.y!==0||f.w!==v.fw||f.h!==v.fh){ g.setLineDash([4,3]); g.strokeStyle='#fff'; g.strokeRect(x+f.x*k+.5,y+f.y*k+.5,f.w*k-1,f.h*k-1); g.setLineDash([]); }
+      g.fillStyle='#e6e8ee'; g.font='11px system-ui'; g.fillText(o.fw===v.fw&&o.fh===v.fh?`${v.fw}×${v.fh} (unchanged)`:`${o.fw}×${o.fh} → ${v.fw}×${v.fh}`,cv.width/2,cv.height-8);
     }
     // Resize preview: the sheet as it will be, with new rows/columns in green and ones that will be removed in red
     function drawResizePrev(v){
@@ -124,7 +143,7 @@ function gridDialog({mode,img,cols,rows,fw,fh,cands}){
     } else [$c,$r,$w,$h].forEach(el=>el.oninput=info);
     if(isResize) $('#gQuick').onclick=e=>{ const b=e.target.closest('[data-q]'); if(!b) return;
       const el=b.dataset.q[0]==='c'?$c:$r, d=b.dataset.q.endsWith('+1')?1:-1; el.value=clamp((+el.value||1)+d,1,256); info(); };
-    if(isResize){ const upd=()=>{ $('#gAH').disabled=$('#gAV').disabled=$('#gScale').value==='stretch'; info(); }; $('#gScale').onchange=upd; $('#gPos').onchange=info; upd(); }
+    if(isResize){ const upd=()=>{ $('#gAH').disabled=$('#gAV').disabled=$('#gScale').value==='stretch'; info(); }; $('#gScale').onchange=upd; $('#gPos').onchange=info; $('#gAH').onchange=info; $('#gAV').onchange=info; upd(); }
     if(isNew){ $('#gPre').onchange=e=>{ const p=PRESETS[+e.target.value]; if(p[1]){ $c.value=p[1]; $r.value=p[2]; $w.value=p[3]; $h.value=p[4]; } info(); }; $('#gPre').value=0; $('#gPre').onchange({target:$('#gPre')}); }
     info();
   });
@@ -166,27 +185,30 @@ function indexMap(nOld,nNew,pos,active){
   }
   return map;
 }
-function applyLayout(v){
-  const olds=layers, o={fw:S.fw,fh:S.fh,cols:S.cols,rows:S.rows}, nw=v.cols*v.fw, nh=v.rows*v.fh;
-  const cmap=indexMap(o.cols,v.cols,v.pos||'end',S.active.c), rmap=indexMap(o.rows,v.rows,v.pos||'end',S.active.r);
+// How one cell's art is carried into the new cell size (crop/pad, stretch, or fit). Shared by the preview and by applyLayout.
+function cellMapper(o,v){
   const sameSize=o.fw===v.fw&&o.fh===v.fh, mode=sameSize?'crop':(v.scale||'crop'), ah=v.ah??0.5, av=v.av??1;
-  // crop / pad: copy the overlapping part, lined up by the anchor
-  const cw=Math.min(o.fw,v.fw), chh=Math.min(o.fh,v.fh);
+  const cw=Math.min(o.fw,v.fw), chh=Math.min(o.fh,v.fh);                                  // crop / pad: copy the overlap, lined up by the anchor
   const sx=Math.floor((o.fw-cw)*ah), sy=Math.floor((o.fh-chh)*av), dx=Math.floor((v.fw-cw)*ah), dy=Math.floor((v.fh-chh)*av);
-  // stretch / fit: every output pixel is a straight copy of one source pixel (no blending)
-  let sw=v.fw, sh=v.fh;
+  let sw=v.fw, sh=v.fh;                                                                    // stretch / fit: every output pixel is a copy of one source pixel
   if(mode==='fit'){ const k=Math.min(v.fw/o.fw,v.fh/o.fh); sw=Math.max(1,Math.round(o.fw*k)); sh=Math.max(1,Math.round(o.fh*k)); }
   const ox=Math.floor((v.fw-sw)*ah), oy=Math.floor((v.fh-sh)*av);
+  const place=(srcCv,srcCtx,c,r,dstCtx,nc,nr)=>{
+    if(mode==='crop'){ dstCtx.drawImage(srcCv, c*o.fw+sx, r*o.fh+sy, cw, chh, nc*v.fw+dx, nr*v.fh+dy, cw, chh); return; }
+    const src=new Uint32Array(srcCtx.getImageData(c*o.fw,r*o.fh,o.fw,o.fh).data.buffer), out=dstCtx.createImageData(v.fw,v.fh), dst=new Uint32Array(out.data.buffer);
+    for(let y=0;y<sh;y++){ const syy=Math.min(o.fh-1,Math.floor((y+.5)*o.fh/sh));
+      for(let x=0;x<sw;x++) dst[(y+oy)*v.fw+x+ox]=src[syy*o.fw+Math.min(o.fw-1,Math.floor((x+.5)*o.fw/sw))]; }
+    dstCtx.putImageData(out,nc*v.fw,nr*v.fh);
+  };
+  const foot= mode==='crop'?{x:dx,y:dy,w:cw,h:chh} : mode==='fit'?{x:ox,y:oy,w:sw,h:sh} : {x:0,y:0,w:v.fw,h:v.fh};
+  return {mode,place,foot};
+}
+function applyLayout(v){
+  const olds=layers, o={fw:S.fw,fh:S.fh,cols:S.cols,rows:S.rows}, nw=v.cols*v.fw, nh=v.rows*v.fh;
+  const cmap=indexMap(o.cols,v.cols,v.pos||'end',S.active.c), rmap=indexMap(o.rows,v.rows,v.pos||'end',S.active.r), M=cellMapper(o,v);
   layers=olds.map(ol=>{
     const L=newLayer(nw,nh,ol.name); L.visible=ol.visible; L.opacity=ol.opacity;
-    for(let r=0;r<o.rows;r++) for(let c=0;c<o.cols;c++){
-      const nc=cmap[c], nr=rmap[r]; if(nc<0||nr<0) continue;
-      if(mode==='crop'){ L.ctx.drawImage(ol.cv, c*o.fw+sx, r*o.fh+sy, cw, chh, nc*v.fw+dx, nr*v.fh+dy, cw, chh); continue; }
-      const src=new Uint32Array(ol.ctx.getImageData(c*o.fw,r*o.fh,o.fw,o.fh).data.buffer), out=L.ctx.createImageData(v.fw,v.fh), dst=new Uint32Array(out.data.buffer);
-      for(let y=0;y<sh;y++){ const syy=Math.min(o.fh-1,Math.floor((y+.5)*o.fh/sh));
-        for(let x=0;x<sw;x++) dst[(y+oy)*v.fw+x+ox]=src[syy*o.fw+Math.min(o.fw-1,Math.floor((x+.5)*o.fw/sw))]; }
-      L.ctx.putImageData(out,nc*v.fw,nr*v.fh);
-    }
+    for(let r=0;r<o.rows;r++) for(let c=0;c<o.cols;c++){ const nc=cmap[c], nr=rmap[r]; if(nc<0||nr<0) continue; M.place(ol.cv,ol.ctx,c,r,L.ctx,nc,nr); }
     return L; });
   useLayer(activeL); sizeComp(nw,nh);
   S.fw=v.fw;S.fh=v.fh;S.cols=v.cols;S.rows=v.rows; S.sel=null; S.floating=null;
