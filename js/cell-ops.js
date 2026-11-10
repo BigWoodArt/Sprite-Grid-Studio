@@ -119,9 +119,39 @@ function liftSel(clip){
   for(const r of rs) dctx.clearRect(r.x,r.y,r.w,r.h);
   S.floating={cv:c.cv,x:c.x,y:c.y,clip,label:'Move'}; S.sel={x:c.x,y:c.y,w:c.w,h:c.h}; changed();
 }
+// Moving whole cells: each selected cell's art moves by the same amount but stays inside its own cell.
+// Whatever is pushed past the edge is remembered per cell (layer.mem), so moving back makes the sprite whole again.
+// The memory is only used while the cell still looks exactly as it did when the piece was set down.
+function memMatches(rec,a){
+  const t=mk(a.w,a.h), g=t.getContext('2d',{willReadFrequently:true}); g.drawImage(rec.cv,rec.x-a.x,rec.y-a.y);
+  const A=new Uint32Array(g.getImageData(0,0,a.w,a.h).data.buffer), B=new Uint32Array(dctx.getImageData(a.x,a.y,a.w,a.h).data.buffer);
+  for(let i=0;i<A.length;i++){ const p=(A[i]>>>24)?A[i]:0, q=(B[i]>>>24)?B[i]:0; if(p!==q) return false; }
+  return true;
+}
+function liftCells(cells){
+  const L=layers[activeL], parts=[];
+  for(const {c,r} of cells){
+    const a=cellRect(c,r), rec=L.mem.get(key(c,r));
+    if(rec && memMatches(rec,a)) parts.push({c,r,cv:rec.cv,x:rec.x,y:rec.y});          // the whole piece, including the part that was hidden
+    else parts.push({c,r,cv:grab(a),x:a.x,y:a.y});
+  }
+  for(const p of parts){ const a=cellRect(p.c,p.r); dctx.clearRect(a.x,a.y,a.w,a.h); }
+  S.sel=null; S.floating={parts,x:0,y:0,cv:mk(1,1),clip:null,label:'Move',auto:true};  // x,y are the shared move offset
+  changed();
+}
+function commitParts(f){
+  const L=layers[activeL];
+  for(const p of f.parts){
+    const a=cellRect(p.c,p.r), px=p.x+f.x, py=p.y+f.y;
+    dctx.save(); dctx.beginPath(); dctx.rect(a.x,a.y,a.w,a.h); dctx.clip(); dctx.drawImage(p.cv,px,py); dctx.restore();
+    if(px===a.x&&py===a.y&&p.cv.width===a.w&&p.cv.height===a.h) L.mem.delete(key(p.c,p.r)); else L.mem.set(key(p.c,p.r),{cv:p.cv,x:px,y:py});
+  }
+  S.floating=null; S.sel=null; commit(f.label||'Move');
+}
 function commitFloat(){
   if(TP.tool && TP.dirty) tpApply();
   const f=S.floating; if(!f) return;
+  if(f.parts){ commitParts(f); return; }
   dctx.save(); if(f.clip){ dctx.beginPath(); dctx.rect(f.clip.x,f.clip.y,f.clip.w,f.clip.h); dctx.clip(); }
   dctx.drawImage(f.cv,f.x,f.y); dctx.restore();
   S.floating=null; S.sel=f.auto?null:{x:f.x,y:f.y,w:f.cv.width,h:f.cv.height}; commit(f.label||'Move');

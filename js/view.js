@@ -70,7 +70,10 @@ function render(){
   if(f){
     g.save();
     if(f.clip){ g.beginPath(); g.rect(ox+f.clip.x*z,oy+f.clip.y*z,f.clip.w*z,f.clip.h*z); g.clip(); }
-    g.drawImage(f.cv,ox+f.x*z,oy+f.y*z,f.cv.width*z,f.cv.height*z);
+    if(f.parts){
+      for(const p of f.parts){ const a=cellRect(p.c,p.r); g.save(); g.beginPath(); g.rect(ox+a.x*z,oy+a.y*z,a.w*z,a.h*z); g.clip();
+        g.drawImage(p.cv,ox+(p.x+f.x)*z,oy+(p.y+f.y)*z,p.cv.width*z,p.cv.height*z); g.restore(); }
+    } else g.drawImage(f.cv,ox+f.x*z,oy+f.y*z,f.cv.width*z,f.cv.height*z);
     g.restore();
   }
   g.restore();

@@ -38,7 +38,7 @@ const S = {
 };
 const key = (c,r) => c+','+r;
 let doc, dctx, layers=[], activeL=0, layerCount=1, comp=mk(1,1), cctx, compDirty=true;
-function newLayer(w,h,name){ const cv=mk(w,h), ctx=cv.getContext('2d',{willReadFrequently:true}); ctx.imageSmoothingEnabled=false; return {name,cv,ctx,visible:true,opacity:255}; }
+function newLayer(w,h,name){ const cv=mk(w,h), ctx=cv.getContext('2d',{willReadFrequently:true}); ctx.imageSmoothingEnabled=false; return {name,cv,ctx,visible:true,opacity:255,mem:new Map()}; }
 function useLayer(i){ activeL=clamp(i,0,layers.length-1); doc=layers[activeL].cv; dctx=layers[activeL].ctx; }
 function sizeComp(w,h){ comp=mk(w,h); cctx=comp.getContext('2d',{willReadFrequently:true}); compDirty=true; }
 function setDoc(w,h){ layers=[newLayer(w,h,'Layer 1')]; layerCount=1; useLayer(0); sizeComp(w,h); }
@@ -64,7 +64,7 @@ function snapshot(label,opts={}){
   const cur=HIST.list[HIST.idx];
   HIST.list.length = HIST.idx+1;
   const lay = (opts.share&&cur) ? cur.layers
-    : layers.map(l=>({name:l.name,visible:l.visible,opacity:l.opacity,data:l.ctx.getImageData(0,0,DW(),DH())}));
+    : layers.map(l=>({name:l.name,visible:l.visible,opacity:l.opacity,mem:new Map(l.mem),data:l.ctx.getImageData(0,0,DW(),DH())}));
   HIST.list.push({label, active:activeL, layers:lay, sel:opts.sel||cloneRects(selRects()), m:{fw:S.fw,fh:S.fh,cols:S.cols,rows:S.rows}});
   // only steps that own pixel data count against the memory budget
   while(HIST.list.length>1 && (new Set(HIST.list.map(x=>x.layers)).size>histMax() || HIST.list.length>histMax()*4)) HIST.list.shift();
@@ -85,7 +85,7 @@ function restoreHist(i){
   if(rs.length){ S.sel={...rs[rs.length-1]}; S.extra=cloneRects(rs.slice(0,-1)); S.extraOf=S.sel; } else { S.sel=null; S.extra=null; S.extraOf=null; }
   if(!samePixels){                       // selection-only steps leave the layers alone (and don't mark the file as changed)
     const w=e.layers[0].data.width, h=e.layers[0].data.height;
-    layers=e.layers.map(l=>{ const L=newLayer(w,h,l.name); L.visible=l.visible; L.opacity=l.opacity; L.ctx.putImageData(l.data,0,0); return L; });
+    layers=e.layers.map(l=>{ const L=newLayer(w,h,l.name); L.visible=l.visible; L.opacity=l.opacity; L.mem=new Map(l.mem||[]); L.ctx.putImageData(l.data,0,0); return L; });
     useLayer(e.active); sizeComp(w,h);
     Object.assign(S, e.m);
     S.cellSel = new Set([...S.cellSel].filter(k=>{const [c,r]=k.split(',').map(Number);return c<S.cols&&r<S.rows;}));

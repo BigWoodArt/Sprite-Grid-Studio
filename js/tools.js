@@ -121,7 +121,13 @@ view.addEventListener('pointerdown',e=>{
       commitFloat();
     }
     if(t==='move'){
-      if(!S.sel){ if(!inDoc(p.x,p.y)) return; const {c,r}=cellAt(p.x,p.y); ensureCell(p); S.sel=cellRect(c,r); liftSel(S.lock?cellRect(c,r):null); S.floating.auto=true; }
+      if(!S.sel){
+        if(!inDoc(p.x,p.y)) return; const {c,r}=cellAt(p.x,p.y); ensureCell(p);
+        const cells=selCells();                                   // every selected cell moves together
+        if(S.lock) liftCells(cells);                              // stays inside each cell, and remembers what goes off the edge
+        else if(cells.length>1){ const rs=cells.map(o=>cellRect(o.c,o.r)); S.sel=rs[rs.length-1]; S.extra=rs.slice(0,-1); S.extraOf=S.sel; liftSel(null); S.floating.auto=true; }
+        else { S.sel=cellRect(c,r); liftSel(null); S.floating.auto=true; }
+      }
       else liftSel(S.lock?lockRectAt(S.sel.x,S.sel.y):null);
       drag={kind:'fmove', start:p, fx:S.floating.x, fy:S.floating.y}; return;
     }
@@ -148,7 +154,7 @@ view.addEventListener('pointermove',e=>{
   if(drag.kind==='grad'){ drag.cur=p; updateGradPreview(); return; }
   if(drag.kind==='fmove'){
     S.floating.x=drag.fx+(p.x-drag.start.x); S.floating.y=drag.fy+(p.y-drag.start.y);
-    S.sel={x:S.floating.x,y:S.floating.y,w:S.floating.cv.width,h:S.floating.cv.height}; changed(); return;
+    if(!S.floating.parts) S.sel={x:S.floating.x,y:S.floating.y,w:S.floating.cv.width,h:S.floating.cv.height}; changed(); return;
   }
   if(drag.kind==='marq'){
     const a=drag.start, b={x:clamp(p.x,0,DW()-1),y:clamp(p.y,0,DH()-1)};

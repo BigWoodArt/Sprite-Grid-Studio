@@ -61,7 +61,7 @@ document.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{ const [dx,dy]=b
 function nudge(dx,dy,wrap){
   if(S.floating||S.sel){
     if(!S.floating) liftSel(null);
-    S.floating.x+=dx; S.floating.y+=dy; S.sel={x:S.floating.x,y:S.floating.y,w:S.floating.cv.width,h:S.floating.cv.height}; changed(); return;
+    S.floating.x+=dx; S.floating.y+=dy; if(!S.floating.parts) S.sel={x:S.floating.x,y:S.floating.y,w:S.floating.cv.width,h:S.floating.cv.height}; changed(); return;
   }
   withRects('Nudge', r=>nudgeRect(r,dx,dy,wrap));
 }
