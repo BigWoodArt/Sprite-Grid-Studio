@@ -68,6 +68,15 @@ function render(){
   if(preview) g.drawImage(preview,ox,oy,W*z,H*z);
   const f=S.floating;
   if(f){
+    if(f.replace&&!f.parts){        // a replacing paste: show what the area looks like without the active layer, then the piece on top
+      const x0=Math.max(0,f.x), y0=Math.max(0,f.y), x1=Math.min(W,f.x+f.cv.width), y1=Math.min(H,f.y+f.cv.height);
+      if(x1>x0&&y1>y0){
+        g.save(); g.beginPath(); g.rect(ox+x0*z,oy+y0*z,(x1-x0)*z,(y1-y0)*z); g.clip();
+        g.fillStyle=S.bgMode==='checker'?g.createPattern(checkPat,'repeat'):S.bgMode; g.fillRect(ox+x0*z,oy+y0*z,(x1-x0)*z,(y1-y0)*z);
+        for(let i=0;i<layers.length;i++){ const l=layers[i]; if(i===activeL||!l.visible||l.opacity<=0) continue; g.globalAlpha=l.opacity/255; g.drawImage(l.cv,x0,y0,x1-x0,y1-y0,ox+x0*z,oy+y0*z,(x1-x0)*z,(y1-y0)*z); }
+        g.globalAlpha=1; g.restore();
+      }
+    }
     g.save();
     if(f.clip){ g.beginPath(); g.rect(ox+f.clip.x*z,oy+f.clip.y*z,f.clip.w*z,f.clip.h*z); g.clip(); }
     if(f.parts){

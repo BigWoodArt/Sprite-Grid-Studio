@@ -110,17 +110,18 @@ function pasteClip(){
     if(cl.items.length===1 && cs.length>=1){ for(const t of cs) placeCells(cl,t.c,t.r); }
     else { placeCells(cl, cs[0].c, cs[0].r); }
     commit('Paste cells');
-  } else if(S.sel){ startFloat(cl.cv, S.sel.x, S.sel.y, 'Paste'); setTool('move'); }                    // a region was selected on purpose: paste there
+  } else if(S.sel){ startFloat(cl.cv, S.sel.x, S.sel.y, 'Paste', true); setTool('move'); }                    // a region was selected on purpose: paste there
   else {                                                                                                   // otherwise into the active cell, at the same spot it was copied from
     const rel=cl.rel||{dx:0,dy:0}, cs=selCells();
-    if(cs.length>1){ for(const t of cs) dctx.drawImage(cl.cv,t.c*S.fw+rel.dx,t.r*S.fh+rel.dy); commit('Paste'); }   // several cells selected: paste into each
-    else { startFloat(cl.cv, S.active.c*S.fw+rel.dx, S.active.r*S.fh+rel.dy, 'Paste'); setTool('move'); }
+    if(cs.length>1){ for(const t of cs){ const x=t.c*S.fw+rel.dx, y=t.r*S.fh+rel.dy; dctx.clearRect(x,y,cl.cv.width,cl.cv.height); dctx.drawImage(cl.cv,x,y); } commit('Paste'); }   // several cells selected: paste into each
+    else { startFloat(cl.cv, S.active.c*S.fw+rel.dx, S.active.r*S.fh+rel.dy, 'Paste', true); setTool('move'); }
   }
 }
 function cutSel(){ copySel(); if(S.sel){ for(const r of selRects()) dctx.clearRect(r.x,r.y,r.w,r.h); commit('Cut'); } else { clearTargets(); } }
 function clearTargets(){ withRects('Clear', r=>dctx.clearRect(r.x,r.y,r.w,r.h)); }
-function startFloat(cv,x,y,label){
-  S.floating={cv,x,y,clip:null,label}; S.sel={x,y,w:cv.width,h:cv.height}; changed();
+// replace: the piece overwrites what is under it, so its transparent pixels erase (used by Paste of a copied region)
+function startFloat(cv,x,y,label,replace){
+  S.floating={cv,x,y,clip:null,label,replace:!!replace}; S.sel={x,y,w:cv.width,h:cv.height}; changed();
 }
 function liftSel(clip){
   const rs=selRects(), c=selComposite();            // several regions lift together as one piece
@@ -161,6 +162,7 @@ function commitFloat(){
   const f=S.floating; if(!f) return;
   if(f.parts){ commitParts(f); return; }
   dctx.save(); if(f.clip){ dctx.beginPath(); dctx.rect(f.clip.x,f.clip.y,f.clip.w,f.clip.h); dctx.clip(); }
+  if(f.replace) dctx.clearRect(f.x,f.y,f.cv.width,f.cv.height);
   dctx.drawImage(f.cv,f.x,f.y); dctx.restore();
   S.floating=null; S.sel=f.auto?null:{x:f.x,y:f.y,w:f.cv.width,h:f.cv.height}; commit(f.label||'Move');
 }
