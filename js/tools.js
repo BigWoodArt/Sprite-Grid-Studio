@@ -69,7 +69,7 @@ view.addEventListener('pointerdown',e=>{
   const btn=e.button;
   if(e.altKey){ pickColor(p,btn); return; }
   // right-click with any tool except Pencil jumps back to Select Cells (and selects the cell under the cursor)
-  if(btn===2 && S.autoCell && !['pencil','line','rect','ellipse','cell'].includes(S.tool)){
+  if(btn===2 && S.autoCell && !['pencil','bucket','line','rect','ellipse','cell'].includes(S.tool)){
     setTool('cell'); if(inDoc(p.x,p.y)){ const {c,r}=cellAt(p.x,p.y); selectCell(c,r,{ctrl:e.ctrlKey||e.metaKey,shift:e.shiftKey}); } return;
   }
   const col = rgba(btn===2?S.bg:S.fg);
