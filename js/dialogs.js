@@ -25,6 +25,14 @@ const PRESETS=[
   ['16×16 tiles, 8 across',8,4,16,16],
   ['Custom',0,0,0,0]
 ];
+// Preview canvases are drawn at the screen's real pixel density (devicePixelRatio) and then used in CSS units, so thin
+// grid lines never get dropped or doubled by the browser scaling a fixed-size bitmap.
+function prepPreview(cv){
+  const D=window.devicePixelRatio||1, w=parseInt(cv.style.width), h=parseInt(cv.style.height), pw=Math.round(w*D), ph=Math.round(h*D);
+  if(cv.width!==pw||cv.height!==ph){ cv.width=pw; cv.height=ph; }
+  const g=cv.getContext('2d'); g.setTransform(D,0,0,D,0,0); g.clearRect(0,0,w,h); g.imageSmoothingEnabled=false;
+  return {g,w,h,D,snap:q=>(Math.round(q*D)+.5)/D};        // snap: a line position that lands on a whole device pixel
+}
 function gridDialog({mode,img,cols,rows,fw,fh,cands}){
   return new Promise(res=>{
     const isNew=mode==='new', isOpen=mode==='open', isResize=mode==='resize';
@@ -72,32 +80,32 @@ function gridDialog({mode,img,cols,rows,fw,fh,cands}){
     }
     // Single-cell preview: the active cell as it will be, large. Dotted outline = where the old cell's art ends up.
     function drawCellPrev(v){
-      const cv=$('#gCell'), g=cv.getContext('2d'); g.clearRect(0,0,cv.width,cv.height); g.textAlign='center'; g.textBaseline='alphabetic';
+      const cv=$('#gCell'), {g,w:CW,h:CH}=prepPreview(cv); g.textAlign='center'; g.textBaseline='alphabetic';
       const o={fw:S.fw,fh:S.fh,cols:S.cols,rows:S.rows}, label='Active cell C'+(S.active.c+1)+', R'+(S.active.r+1);
-      g.fillStyle='#9aa0b2'; g.font='11px system-ui'; g.fillText(label,cv.width/2,14);
+      g.fillStyle='#9aa0b2'; g.font='11px system-ui'; g.fillText(label,CW/2,14);
       const cm=indexMap(S.cols,v.cols,$('#gPos').value,S.active.c), rm=indexMap(S.rows,v.rows,$('#gPos').value,S.active.r);
-      if(cm[S.active.c]<0||rm[S.active.r]<0){ g.fillStyle='#ff5d5d'; g.font='bold 13px system-ui'; g.fillText('This cell will be removed',cv.width/2,cv.height/2); return; }
+      if(cm[S.active.c]<0||rm[S.active.r]<0){ g.fillStyle='#ff5d5d'; g.font='bold 13px system-ui'; g.fillText('This cell will be removed',CW/2,CH/2); return; }
       const vv={...v,ah:+$('#gAH').value,av:+$('#gAV').value,scale:$('#gScale').value}, M=cellMapper(o,vv);
       const t=mk(v.fw,v.fh), tg=t.getContext('2d'); refreshComp(); M.place(comp,cctx,S.active.c,S.active.r,tg,0,0);
-      const areaW=cv.width-20, areaH=cv.height-48, s=Math.min(areaW/v.fw,areaH/v.fh), k=s>=1?Math.floor(s):s;
-      const w=v.fw*k, h=v.fh*k, x=Math.round((cv.width-w)/2), y=Math.round(22+(areaH-h)/2);
-      g.imageSmoothingEnabled=false; g.drawImage(t,0,0,v.fw,v.fh,x,y,w,h);
+      const areaW=CW-20, areaH=CH-48, sc=Math.min(areaW/v.fw,areaH/v.fh), k=sc>=1?Math.floor(sc):sc;
+      const w=v.fw*k, h=v.fh*k, x=Math.round((CW-w)/2), y=Math.round(22+(areaH-h)/2);
+      g.drawImage(t,0,0,v.fw,v.fh,x,y,w,h);
       g.strokeStyle='rgba(255,157,46,.95)'; g.lineWidth=1; g.strokeRect(x-.5,y-.5,w+1,h+1);                          // the new cell
       const f=M.foot; if(f.x!==0||f.y!==0||f.w!==v.fw||f.h!==v.fh){ g.setLineDash([4,3]); g.strokeStyle='#fff'; g.strokeRect(x+f.x*k+.5,y+f.y*k+.5,f.w*k-1,f.h*k-1); g.setLineDash([]); }
-      g.fillStyle='#e6e8ee'; g.font='11px system-ui'; g.fillText(o.fw===v.fw&&o.fh===v.fh?`${v.fw}×${v.fh} (unchanged)`:`${o.fw}×${o.fh} → ${v.fw}×${v.fh}`,cv.width/2,cv.height-8);
+      g.fillStyle='#e6e8ee'; g.font='11px system-ui'; g.fillText(o.fw===v.fw&&o.fh===v.fh?`${v.fw}×${v.fh} (unchanged)`:`${o.fw}×${o.fh} → ${v.fw}×${v.fh}`,CW/2,CH-8);
     }
     // Resize preview: the sheet as it will be, with new rows/columns in green and ones that will be removed in red
     function drawResizePrev(v){
-      const cv=$('#gPrev'), g=cv.getContext('2d'); g.clearRect(0,0,cv.width,cv.height);
+      const cv=$('#gPrev'), {g,w:CW,h:CH,D,snap}=prepPreview(cv);
       const pos=$('#gPos').value, cm=indexMap(S.cols,v.cols,pos,S.active.c), rm=indexMap(S.rows,v.rows,pos,S.active.r);
       const axis=(nOld,nNew,map)=>{ const out=[];
         if(nNew>=nOld){ for(let i=0;i<nNew;i++){ const k=map.indexOf(i); out.push(k>=0?{old:k}:{add:true}); } }
         else for(let k=0;k<nOld;k++) out.push({old:k,rm:map[k]<0});
         return out; };
       const cols=axis(S.cols,v.cols,cm), rows=axis(S.rows,v.rows,rm), ratio=S.fw/S.fh;
-      const cw=Math.min((cv.width-6)/cols.length, (cv.height-6)/rows.length*ratio), ch=cw/ratio;
-      const ox=(cv.width-cw*cols.length)/2, oy=(cv.height-ch*rows.length)/2;
-      refreshComp(); g.imageSmoothingEnabled=false;
+      const cw=Math.min((CW-6)/cols.length, (CH-6)/rows.length*ratio), ch=cw/ratio;
+      const ox=(CW-cw*cols.length)/2, oy=(CH-ch*rows.length)/2;
+      refreshComp();
       rows.forEach((R,j)=>cols.forEach((C,i)=>{
         const x=ox+i*cw, y=oy+j*ch;
         if(C.add||R.add){
@@ -110,19 +118,29 @@ function gridDialog({mode,img,cols,rows,fw,fh,cands}){
             g.strokeStyle='#ff5d5d'; g.lineWidth=2; g.beginPath(); g.moveTo(x+3,y+3); g.lineTo(x+cw-3,y+ch-3); g.moveTo(x+cw-3,y+3); g.lineTo(x+3,y+ch-3); g.stroke();
           }
         }
-        g.strokeStyle=(C.add||R.add)?'rgba(95,211,141,.9)':(C.rm||R.rm)?'rgba(255,93,93,.9)':'rgba(255,157,46,.8)'; g.lineWidth=1; g.strokeRect(Math.round(x)+.5,Math.round(y)+.5,Math.round(cw)-1,Math.round(ch)-1);
+        g.strokeStyle=(C.add||R.add)?'rgba(95,211,141,.9)':(C.rm||R.rm)?'rgba(255,93,93,.9)':'rgba(255,157,46,.85)'; g.lineWidth=1;
+        g.strokeRect(snap(x),snap(y),Math.max(1,cw-1),Math.max(1,ch-1));
       }));
       // the active cell, so "after / before the active cell" is easy to follow
       const ai=cols.findIndex(C=>C.old===S.active.c), aj=rows.findIndex(R=>R.old===S.active.r);
       if(ai>=0&&aj>=0){ g.strokeStyle='#fff'; g.lineWidth=2; g.strokeRect(ox+ai*cw+1,oy+aj*ch+1,cw-2,ch-2); }
     }
+    // Open-dialog preview: the image with the chosen grid drawn over it (lines stay inside the picture, on whole device pixels)
     function drawPrev(v){
-      const cv=$('#gPrev'), g=cv.getContext('2d'); g.clearRect(0,0,cv.width,cv.height);
-      const sc=Math.min(cv.width/iw, cv.height/ih), w=iw*sc, h=ih*sc, ox=(cv.width-w)/2, oy=(cv.height-h)/2;
-      g.imageSmoothingEnabled=false; g.drawImage(img,ox,oy,w,h);
-      if(!v.ok) return; g.strokeStyle='rgba(255,157,46,.9)'; g.lineWidth=1; g.beginPath();
-      for(let c=0;c<=v.cols;c++){ const x=Math.round(ox+c*v.fw*sc)+.5; g.moveTo(x,oy); g.lineTo(x,oy+h); }
-      for(let r=0;r<=v.rows;r++){ const y=Math.round(oy+r*v.fh*sc)+.5; g.moveTo(ox,y); g.lineTo(ox+w,y); }
+      const cv=$('#gPrev'), {g,w:CW,h:CH,D}=prepPreview(cv);
+      const sc=Math.min(CW/iw, CH/ih), w=iw*sc, h=ih*sc, ox=(CW-w)/2, oy=(CH-h)/2;
+      g.drawImage(img,ox,oy,w,h);
+      if(!v.ok) return;
+      const px=1/D, loX=(Math.ceil(ox*D)+.5)/D, hiX=(Math.floor((ox+w)*D)-.5)/D, loY=(Math.ceil(oy*D)+.5)/D, hiY=(Math.floor((oy+h)*D)-.5)/D;   // the picture's first and last whole device pixel
+      const lx=q=>Math.min(Math.max((Math.round(q*D)+.5)/D,loX),hiX), ly=q=>Math.min(Math.max((Math.round(q*D)+.5)/D,loY),hiY);
+      const line=(x0,y0,x1,y1)=>{ g.moveTo(x0,y0); g.lineTo(x1,y1); };
+      g.lineWidth=px*2; g.strokeStyle='rgba(0,0,0,.55)'; g.beginPath();                         // dark underline so the lines show on any artwork
+      for(let c=0;c<=v.cols;c++){ const x=lx(ox+c*v.fw*sc); line(x,oy,x,oy+h); }
+      for(let r=0;r<=v.rows;r++){ const y=ly(oy+r*v.fh*sc); line(ox,y,ox+w,y); }
+      g.stroke();
+      g.lineWidth=px; g.strokeStyle='rgba(255,157,46,1)'; g.beginPath();
+      for(let c=0;c<=v.cols;c++){ const x=lx(ox+c*v.fw*sc); line(x,oy,x,oy+h); }
+      for(let r=0;r<=v.rows;r++){ const y=ly(oy+r*v.fh*sc); line(ox,y,ox+w,y); }
       g.stroke();
     }
     if(isOpen){
