@@ -76,7 +76,7 @@ window.addEventListener('keydown',e=>{
     else if(k==='x'){ e.preventDefault(); cutSel(); }
     else if(k==='v'){ if(S.clip){ e.preventDefault(); pasteClip(); } }
     else if(k==='d'){ e.preventDefault(); commitFloat(); S.sel=null; selHistory('Deselect'); S.cellSel=new Set([key(S.active.c,S.active.r)]); syncCellUI(); toast('Selection cleared'); }
-    else if(k==='a'){ e.preventDefault(); S.cellSel=new Set(); for(let r=0;r<S.rows;r++) for(let c=0;c<S.cols;c++) S.cellSel.add(key(c,r)); syncCellUI(); }
+    else if(k==='a'){ e.preventDefault(); clearRegionSel(); S.cellSel=new Set(); for(let r=0;r<S.rows;r++) for(let c=0;c<S.cols;c++) S.cellSel.add(key(c,r)); syncCellUI(); }
     return;
   }
   if(typing) return;

@@ -86,7 +86,7 @@ view.addEventListener('pointerdown',e=>{
       const anchor=selAnchor(), base=(e.ctrlKey||e.metaKey)?new Set(S.cellSel):new Set();
       selectCell(c,r,{shift:true,ctrl:e.ctrlKey||e.metaKey}); drag={kind:'cells',start:anchor,base}; return;
     }
-    S.cellSel=new Set([key(c,r)]); S.active={c,r}; S.anchor={c,r}; drag={kind:'cells',start:{c,r},base:new Set()}; syncCellUI(); return;
+    clearRegionSel(); S.cellSel=new Set([key(c,r)]); S.active={c,r}; S.anchor={c,r}; drag={kind:'cells',start:{c,r},base:new Set()}; syncCellUI(); return;
   }
   if(PANEL_TOOLS.includes(t)&&t!=='gradient'){      // adjustment tools: click a cell to pick what they apply to
     if(inDoc(p.x,p.y)){ if(TP.dirty) tpApply(); S.sel=null; const {c,r}=cellAt(p.x,p.y); selectCell(c,r,{ctrl:e.ctrlKey||e.metaKey,shift:e.shiftKey}); tpCapture(); }

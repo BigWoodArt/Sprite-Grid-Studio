@@ -173,12 +173,15 @@ function cancelFloat(){ if(S.floating){ restoreHist(HIST.idx); } }
 // Ctrl-click adds or removes a single cell. Ctrl+Shift adds that range to the current selection.
 function selAnchor(){ const a=S.anchor; return (a&&a.c<S.cols&&a.r<S.rows)?a:S.active; }
 function cellRange(a,c,r){ const out=[], c0=Math.min(a.c,c), c1=Math.max(a.c,c), r0=Math.min(a.r,r), r1=Math.max(a.r,r); for(let rr=r0;rr<=r1;rr++) for(let cc=c0;cc<=c1;cc++) out.push(key(cc,rr)); return out; }
+// Choosing cells replaces any region selection (it belonged to the cell you were in), so Paste goes to the chosen cell
+function clearRegionSel(){ if(S.sel&&!S.floating){ S.sel=null; S.extra=null; S.extraOf=null; selHistory('Deselect'); } }
 function selectCell(c,r,{ctrl,shift}={}){
+  clearRegionSel();
   if(shift){ S.cellSel=new Set([...(ctrl?S.cellSel:[]),...cellRange(selAnchor(),c,r)]); S.active={c,r}; }     // anchor stays put
   else if(ctrl){ const k=key(c,r); if(S.cellSel.has(k)&&S.cellSel.size>1) S.cellSel.delete(k); else S.cellSel.add(k); S.active={c,r}; S.anchor={c,r}; }
   else { S.cellSel=new Set([key(c,r)]); S.active={c,r}; S.anchor={c,r}; }
   syncCellUI();
 }
-function selectRow(r,add){ if(!add) S.cellSel.clear(); for(let c=0;c<S.cols;c++) S.cellSel.add(key(c,r)); S.active={c:S.active.c,r}; syncCellUI(); }
-function selectCol(c,add){ if(!add) S.cellSel.clear(); for(let r=0;r<S.rows;r++) S.cellSel.add(key(c,r)); S.active={c,r:S.active.r}; syncCellUI(); }
+function selectRow(r,add){ clearRegionSel(); if(!add) S.cellSel.clear(); for(let c=0;c<S.cols;c++) S.cellSel.add(key(c,r)); S.active={c:S.active.c,r}; syncCellUI(); }
+function selectCol(c,add){ clearRegionSel(); if(!add) S.cellSel.clear(); for(let r=0;r<S.rows;r++) S.cellSel.add(key(c,r)); S.active={c,r:S.active.r}; syncCellUI(); }
 function syncCellUI(){ changed(); updateThumbClasses(); updateStatus(); updateAnimPattern(); }
