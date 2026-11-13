@@ -93,7 +93,10 @@ function placeCells(clip, ac, ar){
 }
 function copySel(){
   if(S.floating) commitFloat();
-  if(S.sel){ S.clip={type:'pix', cv:selComposite().cv}; toast(selRects().length>1?'Copied '+selRects().length+' regions':'Copied selection'); }
+  if(S.sel){
+    const c=selComposite();                                                       // remember where in its cell the piece was, so Paste can put it at the same spot in another cell
+    S.clip={type:'pix', cv:c.cv, rel:{dx:c.x-Math.floor(c.x/S.fw)*S.fw, dy:c.y-Math.floor(c.y/S.fh)*S.fh}};
+    toast(selRects().length>1?'Copied '+selRects().length+' regions':'Copied selection'); }
   else { const cs=selCells(); if(!cs.length) cs.push({...S.active}); S.clip=grabCells(cs); toast('Copied '+cs.length+' cell'+(cs.length>1?'s':'')); }
   // also push an image to the system clipboard when possible
   try{ const cv = S.clip.type==='pix' ? S.clip.cv : S.clip.items[0].cv;
@@ -107,7 +110,12 @@ function pasteClip(){
     if(cl.items.length===1 && cs.length>=1){ for(const t of cs) placeCells(cl,t.c,t.r); }
     else { placeCells(cl, cs[0].c, cs[0].r); }
     commit('Paste cells');
-  } else { startFloat(cl.cv, S.sel? S.sel.x : S.active.c*S.fw, S.sel? S.sel.y : S.active.r*S.fh, 'Paste'); setTool('move'); }
+  } else if(S.sel){ startFloat(cl.cv, S.sel.x, S.sel.y, 'Paste'); setTool('move'); }                    // a region was selected on purpose: paste there
+  else {                                                                                                   // otherwise into the active cell, at the same spot it was copied from
+    const rel=cl.rel||{dx:0,dy:0}, cs=selCells();
+    if(cs.length>1){ for(const t of cs) dctx.drawImage(cl.cv,t.c*S.fw+rel.dx,t.r*S.fh+rel.dy); commit('Paste'); }   // several cells selected: paste into each
+    else { startFloat(cl.cv, S.active.c*S.fw+rel.dx, S.active.r*S.fh+rel.dy, 'Paste'); setTool('move'); }
+  }
 }
 function cutSel(){ copySel(); if(S.sel){ for(const r of selRects()) dctx.clearRect(r.x,r.y,r.w,r.h); commit('Cut'); } else { clearTargets(); } }
 function clearTargets(){ withRects('Clear', r=>dctx.clearRect(r.x,r.y,r.w,r.h)); }

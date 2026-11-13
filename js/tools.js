@@ -134,6 +134,7 @@ view.addEventListener('pointerdown',e=>{
       else liftSel(S.lock?lockRectAt(S.sel.x,S.sel.y):null);
       drag={kind:'fmove', start:p, fx:S.floating.x, fy:S.floating.y}; return;
     }
+    ensureCell(p);                                      // clicking a cell with this tool makes it the active cell (so Paste goes there)
     const base=e.shiftKey?selRects():[];                // Shift keeps the current regions and adds another
     if(!e.shiftKey) S.sel=null;
     drag={kind:'marq', base, start:{x:clamp(p.x,0,DW()-1),y:clamp(p.y,0,DH()-1)}}; changed(); return;
