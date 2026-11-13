@@ -36,7 +36,7 @@ $('#bSettings').onclick=()=>{ modal('Settings',`
   <div class="grid2"><span>Layer previews</span>
   <label style="color:var(--text)"><input type="checkbox" id="stFull"> Show the full sheet (default: just the top-left cell)</label>
   <span>Tools</span>
-  <label style="color:var(--text)"><input type="checkbox" id="stAuto"> Right-click with any tool except Pencil switches back to Select Cells</label>
+  <label style="color:var(--text)"><input type="checkbox" id="stAuto"> Right-click with any tool except Pencil, Line, Rectangle and Ellipse switches back to Select Cells</label>
   <span>Toolbar</span>
   <label style="color:var(--text)"><input type="checkbox" id="stKeys"> Show each tool's shortcut key on its button</label>
   <span>Open</span>
